@@ -5,6 +5,7 @@ import config from '@/payload.config'
 import Link from 'next/link'
 import { logoutUser } from '@/app/actions'
 import { redirect } from 'next/navigation'
+import { MobileMenu } from './components/MobileMenu'
 import './styles.css'
 
 export const metadata = {
@@ -46,7 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </span>
             </Link>
 
-            {/* Navigation links */}
+            {/* Desktop navigation links — hidden on mobile */}
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
               <Link href="/pricing" className="hover:text-indigo-400 transition-colors">
                 Pricing
@@ -63,10 +64,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               )}
             </nav>
 
-            {/* Auth Actions */}
-            <div className="flex items-center gap-4">
+            {/* Right-side controls */}
+            <div className="flex items-center gap-2 sm:gap-4">
               {user ? (
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   <div className="hidden sm:flex flex-col text-right">
                     <span className="text-sm font-semibold text-white">{user.name}</span>
                     <span className="text-xs text-slate-500">{user.email}</span>
@@ -81,7 +82,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </form>
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
+                <div className="hidden md:flex items-center gap-3">
                   <Link
                     href="/login"
                     className="text-slate-300 hover:text-white text-sm font-semibold px-3 py-2 transition-colors"
@@ -96,6 +97,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </Link>
                 </div>
               )}
+
+              {/* Mobile hamburger — rendered client-side, hidden on md+ */}
+              <MobileMenu
+                navLinks={[
+                  { href: '/pricing', label: 'Pricing Plans' },
+                  ...(user
+                    ? [
+                        { href: '/dashboard', label: 'Dashboard' },
+                        { href: '/features/export-reports', label: 'Premium Reports' },
+                      ]
+                    : []),
+                ]}
+                isLoggedIn={!!user}
+              />
             </div>
           </div>
         </header>
