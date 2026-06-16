@@ -12,6 +12,7 @@ import { Features } from './collections/Features'
 import { Plans } from './collections/Plans'
 import { Subscriptions } from './collections/Subscriptions'
 import { FeatureUsages } from './collections/FeatureUsages'
+import { Payments } from './collections/Payments'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -30,6 +31,7 @@ export default buildConfig({
     Plans,
     Subscriptions,
     FeatureUsages,
+    Payments,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import type { Plan } from '../payload-types'
 
 export const Subscriptions: CollectionConfig = {
     slug: 'subscriptions',
@@ -36,12 +37,12 @@ export const Subscriptions: CollectionConfig = {
                         return data
                     }
 
-                    // 1. Resolve Plan ID
+                    // 1. Resolve Plan ID safely
                     let planId: string | number | undefined = undefined
                     if (data.plan) {
-                        if (typeof data.plan === 'object') {
-                            planId = (data.plan as any).id
-                        } else {
+                        if (typeof data.plan === 'object' && data.plan !== null && 'id' in data.plan) {
+                            planId = (data.plan as { id: string | number }).id
+                        } else if (typeof data.plan === 'string' || typeof data.plan === 'number') {
                             planId = data.plan
                         }
                     }
@@ -53,15 +54,16 @@ export const Subscriptions: CollectionConfig = {
                         throw new Error('Plan is required to create a subscription.')
                     }
 
-                    // 2. Fetch Plan Document
-                    let plan: any = null
+                    // 2. Fetch Plan Document safely
+                    let plan: Plan | null = null
                     try {
                         plan = await req.payload.findByID({
                             collection: 'plans',
                             id: planId,
                         })
-                    } catch (err: any) {
-                        console.error(`[Subscriptions Hook] Error fetching plan by ID ${planId}:`, err)
+                    } catch (err) {
+                        const message = err instanceof Error ? err.message : String(err)
+                        console.error(`[Subscriptions Hook] Error fetching plan by ID ${planId}:`, message)
                         throw new Error(`Plan with ID "${planId}" not found.`)
                     }
 
@@ -73,7 +75,7 @@ export const Subscriptions: CollectionConfig = {
                     console.log('[Subscriptions Hook] Successfully fetched plan:', plan)
 
                     // 3. Verify Validity Days
-                    const validityDays = typeof plan.validityDays === 'number' ? plan.validityDays : parseInt(plan.validityDays, 10)
+                    const validityDays = typeof plan.validityDays === 'number' ? plan.validityDays : parseInt(String(plan.validityDays), 10)
                     if (isNaN(validityDays)) {
                         console.error('[Subscriptions Hook] Error: validityDays is not a valid number.', { validityDays: plan.validityDays })
                         throw new Error('Selected plan has an invalid validity duration.')
@@ -94,8 +96,9 @@ export const Subscriptions: CollectionConfig = {
                     console.log('[Subscriptions Hook] Successfully generated subscription data:', updatedData)
                     return updatedData
 
-                } catch (err: any) {
-                    console.error('[Subscriptions Hook] Fatal Error in beforeChange hook:', err.message || err)
+                } catch (err) {
+                    const message = err instanceof Error ? err.message : String(err)
+                    console.error('[Subscriptions Hook] Fatal Error in beforeChange hook:', message)
                     throw err // Propagate error so user sees meaningful message
                 }
             },

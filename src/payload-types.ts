@@ -73,6 +73,7 @@ export interface Config {
     plans: Plan;
     subscriptions: Subscription;
     'feature-usages': FeatureUsage;
+    payments: Payment;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,6 +87,7 @@ export interface Config {
     plans: PlansSelect<false> | PlansSelect<true>;
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
     'feature-usages': FeatureUsagesSelect<false> | FeatureUsagesSelect<true>;
+    payments: PaymentsSelect<false> | PaymentsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -232,6 +234,24 @@ export interface FeatureUsage {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments".
+ */
+export interface Payment {
+  id: number;
+  user: number | User;
+  plan: number | Plan;
+  amount: number;
+  currency: string;
+  gateway: 'razorpay';
+  razorpayOrderId: string;
+  razorpayPaymentId?: string | null;
+  razorpaySignature?: string | null;
+  status: 'created' | 'paid' | 'failed';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -277,6 +297,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'feature-usages';
         value: number | FeatureUsage;
+      } | null)
+    | ({
+        relationTo: 'payments';
+        value: number | Payment;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -416,6 +440,23 @@ export interface FeatureUsagesSelect<T extends boolean = true> {
   feature?: T;
   count?: T;
   lastReset?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments_select".
+ */
+export interface PaymentsSelect<T extends boolean = true> {
+  user?: T;
+  plan?: T;
+  amount?: T;
+  currency?: T;
+  gateway?: T;
+  razorpayOrderId?: T;
+  razorpayPaymentId?: T;
+  razorpaySignature?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }
