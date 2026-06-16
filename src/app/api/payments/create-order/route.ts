@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { getRazorpayClient } from '@/lib/razorpay'
+import { getPaymentProvider } from '@/lib/payments/paymentService'
 
 /**
  * Handles creation of Razorpay payment orders.
@@ -52,12 +52,12 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid plan price' }, { status: 400 })
         }
 
-        // 3. Create Razorpay Order
-        let order
+        // 3. Create Gateway Order
+        let orderResult
         try {
-            const razorpayClient = getRazorpayClient()
-            order = await razorpayClient.orders.create({
-                amount: amountInRupees * 100, // Razorpay expects amount in paise
+            const paymentProvider = getPaymentProvider()
+            orderResult = await paymentProvider.createOrder({
+                amountInRupees,
                 currency: 'INR',
                 receipt: `plan_${planId}_user_${user.id}`,
                 notes: {
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
                 },
             })
         } catch (err) {
-            console.error('Razorpay order creation failed:', err)
+            console.error('Payment gateway order creation failed:', err)
             return NextResponse.json({ error: 'Failed to create order with payment gateway' }, { status: 502 })
         }
 
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
                     amount: amountInRupees,
                     currency: 'INR',
                     gateway: 'razorpay',
-                    razorpayOrderId: order.id,
+                    razorpayOrderId: orderResult.gatewayOrderId,
                     status: 'created',
                 },
             })
@@ -96,9 +96,9 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({
-            orderId: order.id,
-            amount: order.amount,
-            currency: order.currency,
+            orderId: orderResult.gatewayOrderId,
+            amount: orderResult.amount,
+            currency: orderResult.currency,
             keyId: publicKeyId,
             planName: plan.name,
         })

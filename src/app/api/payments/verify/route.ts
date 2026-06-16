@@ -1,6 +1,6 @@
-import crypto from 'crypto'
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
+import { getPaymentProvider } from '@/lib/payments/paymentService'
 import config from '@payload-config'
 
 /**
@@ -35,21 +35,22 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing payment details' }, { status: 400 })
         }
 
-        // 1. Validate environment configuration
-        const keySecret = process.env.RAZORPAY_KEY_SECRET
-        if (!keySecret) {
-            console.error('RAZORPAY_KEY_SECRET is not configured on the server')
-            return NextResponse.json({ error: 'Internal server configuration error' }, { status: 500 })
+        // 1. Signature Verification
+        let isValid = false
+        try {
+            const paymentProvider = getPaymentProvider()
+            const verificationResult = await paymentProvider.verifyPayment({
+                orderId: razorpay_order_id,
+                paymentId: razorpay_payment_id,
+                signature: razorpay_signature,
+            })
+            isValid = verificationResult.valid
+        } catch (err) {
+            console.error('Payment verification failed with provider:', err)
+            return NextResponse.json({ error: 'Payment verification failed' }, { status: 500 })
         }
 
-        // 2. Signature Verification
-        const verificationBody = `${razorpay_order_id}|${razorpay_payment_id}`
-        const expectedSignature = crypto
-            .createHmac('sha256', keySecret)
-            .update(verificationBody)
-            .digest('hex')
-
-        if (expectedSignature !== razorpay_signature) {
+        if (!isValid) {
             console.warn(`Signature verification failed for order ${razorpay_order_id}`)
             
             // Mark payment as failed if we can find it
