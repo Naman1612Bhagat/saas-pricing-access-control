@@ -242,7 +242,7 @@ export interface Payment {
   plan: number | Plan;
   amount: number;
   currency: string;
-  gateway: 'razorpay';
+  gateway: 'razorpay' | 'cashfree';
   razorpayOrderId: string;
   razorpayPaymentId?: string | null;
   razorpaySignature?: string | null;

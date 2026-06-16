@@ -66,6 +66,10 @@ export const Payments: CollectionConfig = {
                     label: 'Razorpay',
                     value: 'razorpay',
                 },
+                {
+                    label: 'Cashfree',
+                    value: 'cashfree',
+                },
             ],
             required: true,
         },

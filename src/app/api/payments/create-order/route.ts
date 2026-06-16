@@ -24,10 +24,18 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid JSON request body' }, { status: 400 })
         }
 
-        const { planId } = body
+        const { planId, gateway } = body
 
         if (!planId) {
             return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 })
+        }
+
+        if (!gateway) {
+            return NextResponse.json({ error: 'Payment gateway is required' }, { status: 400 })
+        }
+
+        if (gateway !== 'razorpay' && gateway !== 'cashfree') {
+            return NextResponse.json({ error: 'Unsupported payment gateway' }, { status: 400 })
         }
 
         // 1. Fetch Plan Document
@@ -55,7 +63,7 @@ export async function POST(req: Request) {
         // 3. Create Gateway Order
         let orderResult
         try {
-            const paymentProvider = getPaymentProvider()
+            const paymentProvider = getPaymentProvider(gateway)
             orderResult = await paymentProvider.createOrder({
                 amountInRupees,
                 currency: 'INR',
@@ -79,7 +87,7 @@ export async function POST(req: Request) {
                     plan: planId,
                     amount: amountInRupees,
                     currency: 'INR',
-                    gateway: 'razorpay',
+                    gateway: gateway,
                     razorpayOrderId: orderResult.gatewayOrderId,
                     status: 'created',
                 },
@@ -89,17 +97,20 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Failed to initialize payment transaction' }, { status: 500 })
         }
 
-        const publicKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
-        if (!publicKeyId) {
-            console.error('NEXT_PUBLIC_RAZORPAY_KEY_ID environment variable is missing')
-            return NextResponse.json({ error: 'Internal server configuration error' }, { status: 500 })
+        let keyId: string | undefined = undefined
+        if (gateway === 'razorpay') {
+            keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+            if (!keyId) {
+                console.error('NEXT_PUBLIC_RAZORPAY_KEY_ID environment variable is missing')
+                return NextResponse.json({ error: 'Internal server configuration error' }, { status: 500 })
+            }
         }
 
         return NextResponse.json({
             orderId: orderResult.gatewayOrderId,
             amount: orderResult.amount,
             currency: orderResult.currency,
-            keyId: publicKeyId,
+            keyId,
             planName: plan.name,
         })
     } catch (error) {
