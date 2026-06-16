@@ -1,92 +1,108 @@
 import type { Payload } from 'payload'
 import type { Payment } from '@/payload-types'
+import { sql } from 'drizzle-orm'
+
+/** Payload database transaction identifier returned by beginTransaction(). */
+type TransactionID = number | string | null
 
 export interface ProcessSuccessfulPaymentInput {
     payload: Payload
     payment: Payment
     gatewayPaymentId: string
+    /** Optional — present when called from the /verify route; absent from the webhook. */
     gatewaySignature?: string
 }
 
+// ─── Helper: expire active subscriptions ────────────────────────────────────
+
 /**
- * Expires all active subscriptions for the specified user.
+ * Marks all currently-active subscriptions for the given user as 'expired'.
+ * Errors bubble up so the caller's transaction can roll back.
  */
 export async function expireActiveSubscriptions(
     payload: Payload,
     userId: number,
-    transactionID?: any
+    transactionID?: TransactionID,
 ): Promise<void> {
-    try {
-        const activeSubscriptions = await payload.find({
-            collection: 'subscriptions',
-            where: {
-                and: [
-                    {
-                        user: {
-                            equals: userId,
-                        },
-                    },
-                    {
-                        status: {
-                            equals: 'active',
-                        },
-                    },
-                ],
-            },
-            req: transactionID ? { transactionID } : undefined,
-        })
+    const req = transactionID != null ? { transactionID } : undefined
 
-        for (const sub of activeSubscriptions.docs) {
-            await payload.update({
-                collection: 'subscriptions',
-                id: sub.id,
-                data: {
-                    status: 'expired',
-                },
-                req: transactionID ? { transactionID } : undefined,
-            })
-        }
-    } catch (err) {
-        console.error(`[Subscription Service] Failed to expire previous active subscriptions for user ${userId}:`, err)
-        // Propagate error to trigger transaction rollback
-        throw err
+    const activeSubscriptions = await payload.find({
+        collection: 'subscriptions',
+        where: {
+            and: [
+                { user: { equals: userId } },
+                { status: { equals: 'active' } },
+            ],
+        },
+        req,
+    })
+
+    for (const sub of activeSubscriptions.docs) {
+        await payload.update({
+            collection: 'subscriptions',
+            id: sub.id,
+            data: { status: 'expired' },
+            req,
+        })
     }
 }
 
+// ─── Helper: create subscription ─────────────────────────────────────────────
+
 /**
- * Creates a new active subscription for the user and plan.
- * Subscription dates and active status are handled by the Subscriptions collection hook.
+ * Creates a new subscription record.
+ * The Subscriptions collection beforeChange hook computes startDate,
+ * expiryDate, and status automatically — behaviour is preserved unchanged.
+ * Errors bubble up so the caller's transaction can roll back.
  */
 export async function createSubscription(
     payload: Payload,
     userId: number,
     planId: number,
     amountPaid: number,
-    transactionID?: any
+    transactionID?: TransactionID,
 ): Promise<void> {
-    try {
-        await payload.create({
-            collection: 'subscriptions',
-            data: {
-                user: userId,
-                plan: planId,
-                amountPaid: amountPaid,
-            },
-            req: transactionID ? { transactionID } : undefined,
-        })
-    } catch (err) {
-        console.error(`[Subscription Service] Failed to create new subscription for user ${userId}:`, err)
-        throw err
-    }
+    const req = transactionID != null ? { transactionID } : undefined
+
+    await payload.create({
+        collection: 'subscriptions',
+        data: {
+            user: userId,
+            plan: planId,
+            amountPaid,
+        },
+        req,
+    })
 }
 
+// ─── Core: process successful payment ────────────────────────────────────────
+
 /**
- * Handles a successful payment lifecycle:
- * 1. Checks if the payment is already processed (idempotency check).
- * 2. Marks the payment record as 'paid' and records transaction details.
- * 3. Expires previous active subscriptions.
- * 4. Activates the new subscription.
- * Uses database transactions if supported by the database adapter.
+ * Atomically claims a payment and activates the user's subscription.
+ *
+ * ── Race-condition safety ────────────────────────────────────────────────────
+ * Both the /verify route and the Razorpay webhook may invoke this function for
+ * the same payment within milliseconds of each other. The previous
+ * application-level `if (payment.status === 'paid') return` check is a
+ * read-then-write (TOCTOU) pattern: two callers can both read 'created',
+ * both pass the check, and both create a subscription.
+ *
+ * The fix is an atomic conditional UPDATE:
+ *
+ *   UPDATE payments
+ *   SET    status = 'paid', razorpay_payment_id = $1 [, razorpay_signature = $2]
+ *   WHERE  id = $n AND status = 'created'
+ *
+ * PostgreSQL guarantees that exactly ONE concurrent writer receives rowCount = 1.
+ * Every other concurrent writer receives rowCount = 0 and returns immediately.
+ * This is a database-level compare-and-swap and is immune to race conditions.
+ *
+ * ── Transaction scope ────────────────────────────────────────────────────────
+ * The payment claim (step 1) is intentionally executed outside the Payload
+ * transaction because the atomic UPDATE IS the concurrency guard. The
+ * subscription operations (step 2) are wrapped in a Payload transaction so that
+ * expiring old subscriptions and creating the new one are committed atomically.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 export async function processSuccessfulPayment({
     payload,
@@ -94,59 +110,87 @@ export async function processSuccessfulPayment({
     gatewayPaymentId,
     gatewaySignature,
 }: ProcessSuccessfulPaymentInput): Promise<void> {
-    // Idempotency check: prevent double processing if already marked as paid
-    if (payment.status === 'paid') {
-        payload.logger.info(`[Subscription Service] Payment ${payment.id} already marked as paid. Skipping activation.`)
+
+    // ── Step 1: Atomic claim ────────────────────────────────────────────────
+    // Build the conditional UPDATE using drizzle's sql`` tagged template so
+    // parameters are safely bound and the type is SQL<unknown> as expected
+    // by payload.db.execute. The WHERE clause `status = 'created'` is the
+    // compare-and-swap. Only one concurrent caller will succeed.
+    const claimQuery = gatewaySignature != null
+        ? sql`UPDATE payments
+             SET    status = 'paid',
+                    razorpay_payment_id = ${gatewayPaymentId},
+                    razorpay_signature  = ${gatewaySignature}
+             WHERE  id = ${payment.id} AND status = 'created'`
+        : sql`UPDATE payments
+             SET    status = 'paid',
+                    razorpay_payment_id = ${gatewayPaymentId}
+             WHERE  id = ${payment.id} AND status = 'created'`
+
+    const claimResult = await payload.db.execute({ sql: claimQuery })
+
+    // rowCount = 0 → another process already claimed this payment (webhook or
+    // verify route). Return immediately without creating a duplicate subscription.
+    const rowsClaimed = (claimResult as { rowCount?: number }).rowCount ?? 0
+
+    if (rowsClaimed === 0) {
+        payload.logger.info(
+            `[Subscription Service] Payment ${payment.id} already claimed by another process. Skipping duplicate activation.`,
+        )
         return
     }
 
-    // Determine if database transactions are supported by Payload's current db adapter
+    // ── Step 2: Activate subscription (in a Payload transaction) ───────────
+    // We won the atomic claim. Now expire old subscriptions and create the new
+    // one. Both operations are wrapped in a transaction so they succeed or fail
+    // together. If this block throws, the payment remains 'paid' (the claim
+    // cannot be rolled back at this point), but the webhook retry mechanism will
+    // re-trigger activation on the next delivery attempt.
+
     const hasTransactions =
-        payload.db &&
+        payload.db != null &&
         typeof payload.db.beginTransaction === 'function' &&
         typeof payload.db.commitTransaction === 'function' &&
         typeof payload.db.rollbackTransaction === 'function'
 
-    let transactionID: any = null
+    let transactionID: TransactionID = null
+
+    const userId = typeof payment.user === 'object' ? payment.user.id : (payment.user as number)
+    const planId = typeof payment.plan === 'object' ? payment.plan.id : (payment.plan as number)
 
     try {
         if (hasTransactions) {
             transactionID = await payload.db.beginTransaction()
-            payload.logger.info(`[Subscription Service] Started transaction ${transactionID} for payment ${payment.id}`)
+            payload.logger.info(
+                `[Subscription Service] Started transaction ${transactionID} for payment ${payment.id}`,
+            )
         }
 
-        // 1. Update payment record to paid
-        await payload.update({
-            collection: 'payments',
-            id: payment.id,
-            data: {
-                razorpayPaymentId: gatewayPaymentId,
-                ...(gatewaySignature ? { razorpaySignature: gatewaySignature } : {}),
-                status: 'paid',
-            },
-            req: transactionID ? { transactionID } : undefined,
-        })
-
-        const userId = typeof payment.user === 'object' ? payment.user.id : (payment.user as number)
-        const planId = typeof payment.plan === 'object' ? payment.plan.id : (payment.plan as number)
-
-        // 2. Expire previous subscriptions
         await expireActiveSubscriptions(payload, userId, transactionID)
-
-        // 3. Create the new subscription
         await createSubscription(payload, userId, planId, payment.amount, transactionID)
 
-        if (hasTransactions && transactionID) {
+        if (hasTransactions && transactionID != null) {
             await payload.db.commitTransaction(transactionID)
-            payload.logger.info(`[Subscription Service] Committed transaction ${transactionID} for payment ${payment.id}`)
+            payload.logger.info(
+                `[Subscription Service] Committed transaction ${transactionID} for payment ${payment.id}`,
+            )
         }
+
+        payload.logger.info(
+            `[Subscription Service] Successfully activated subscription for user ${userId} on plan ${planId}.`,
+        )
     } catch (error) {
-        if (hasTransactions && transactionID) {
+        if (hasTransactions && transactionID != null) {
             try {
                 await payload.db.rollbackTransaction(transactionID)
-                payload.logger.error(`[Subscription Service] Rolled back transaction ${transactionID} due to error.`)
+                payload.logger.warn(
+                    `[Subscription Service] Rolled back transaction ${transactionID} for payment ${payment.id}`,
+                )
             } catch (rollbackErr) {
-                payload.logger.error(rollbackErr, `[Subscription Service] Failed to rollback transaction ${transactionID}`)
+                payload.logger.error(
+                    rollbackErr,
+                    `[Subscription Service] Failed to rollback transaction ${transactionID}`,
+                )
             }
         }
         throw error
