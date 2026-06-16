@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { razorpay } from '@/lib/razorpay'
+import { getRazorpayClient } from '@/lib/razorpay'
 
 /**
  * Handles creation of Razorpay payment orders.
@@ -55,7 +55,8 @@ export async function POST(req: Request) {
         // 3. Create Razorpay Order
         let order
         try {
-            order = await razorpay.orders.create({
+            const razorpayClient = getRazorpayClient()
+            order = await razorpayClient.orders.create({
                 amount: amountInRupees * 100, // Razorpay expects amount in paise
                 currency: 'INR',
                 receipt: `plan_${planId}_user_${user.id}`,
