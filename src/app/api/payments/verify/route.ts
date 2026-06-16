@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import { getPaymentProvider } from '@/lib/payments/paymentService'
+import { processSuccessfulPayment } from '@/lib/subscriptions/subscriptionService'
 import config from '@payload-config'
 
 /**
@@ -109,72 +110,16 @@ export async function POST(req: Request) {
             })
         }
 
-        // 4. Update payment transaction to paid
+        // 4. Process payment and activate subscription using the unified service
         try {
-            await payload.update({
-                collection: 'payments',
-                id: payment.id,
-                data: {
-                    razorpayPaymentId: razorpay_payment_id,
-                    razorpaySignature: razorpay_signature,
-                    status: 'paid',
-                },
+            await processSuccessfulPayment({
+                payload,
+                payment,
+                gatewayPaymentId: razorpay_payment_id,
+                gatewaySignature: razorpay_signature,
             })
         } catch (err) {
-            console.error('Failed to update payment status to paid:', err)
-            return NextResponse.json({ error: 'Failed to complete transaction update' }, { status: 500 })
-        }
-
-        // 5. Expire existing active subscriptions for the user
-        try {
-            const activeSubscriptions = await payload.find({
-                collection: 'subscriptions',
-                where: {
-                    and: [
-                        {
-                            user: {
-                                equals: user.id,
-                            },
-                        },
-                        {
-                            status: {
-                                equals: 'active',
-                            },
-                        },
-                    ],
-                },
-            })
-
-            for (const sub of activeSubscriptions.docs) {
-                await payload.update({
-                    collection: 'subscriptions',
-                    id: sub.id,
-                    data: {
-                        status: 'expired',
-                    },
-                })
-            }
-        } catch (err) {
-            console.error('Failed to expire previous active subscriptions:', err)
-            // Log the error but proceed with creating the new subscription so we don't
-            // penalize a paying customer for a cleanup error.
-        }
-
-        // 6. Create new subscription
-        // Plan fetching, date calculations (startDate, expiryDate), and setting active status
-        // are encapsulated and executed in the 'beforeChange' hook on Subscriptions collection.
-        const planId = typeof payment.plan === 'object' ? payment.plan.id : payment.plan
-        try {
-            await payload.create({
-                collection: 'subscriptions',
-                data: {
-                    user: user.id,
-                    plan: planId,
-                    amountPaid: payment.amount,
-                },
-            })
-        } catch (err) {
-            console.error('Failed to create new subscription record:', err)
+            console.error('Failed to process successful payment activation:', err)
             return NextResponse.json({ error: 'Failed to activate subscription' }, { status: 500 })
         }
 
