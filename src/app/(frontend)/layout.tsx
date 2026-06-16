@@ -6,12 +6,14 @@ import Link from 'next/link'
 import { logoutUser } from '@/app/actions'
 import { redirect } from 'next/navigation'
 import { MobileMenu } from './components/MobileMenu'
+import { AccessShieldLogo } from './components/AccessShieldLogo'
 import './styles.css'
 
 export const metadata = {
   description: 'A SaaS Pricing-Plan Access Control System using Payload CMS 3.x',
   title: 'SaaS Access Shield',
 }
+
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headers = await getHeaders()
@@ -38,13 +40,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <header className="sticky top-0 z-50 w-full border-b border-[#1f293d]/50 bg-[#0b0f19]/80 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-all">
-                S
-              </div>
-              <span className="text-xl font-bold tracking-tight text-white group-hover:text-indigo-400 transition-colors">
-                AccessShield
-              </span>
+            <Link href="/" className="flex items-center group">
+              <AccessShieldLogo showText={true} iconSize={36} textClassName="text-lg sm:text-xl group-hover:text-indigo-400 transition-colors" />
             </Link>
 
             {/* Desktop navigation links — hidden on mobile */}
