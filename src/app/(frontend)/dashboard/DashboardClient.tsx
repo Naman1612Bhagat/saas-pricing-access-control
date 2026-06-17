@@ -3,6 +3,7 @@
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { simulateTimeTravel, incrementReportUsageAction } from '@/app/actions'
+import { Zap, Clock, ShieldAlert, FileDown } from 'lucide-react'
 
 type Props = {
     subscriptionId: string | number
@@ -41,62 +42,84 @@ export default function DashboardClient({ subscriptionId }: Props) {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             {/* Status Messages */}
             {statusMessage && (
                 <div
-                    className={`p-4 rounded-xl border text-sm text-center ${
+                    className={`p-4 rounded-2xl border text-xs font-semibold text-center flex items-center justify-center gap-2 transition-all duration-350 ${
                         statusMessage.isError
-                            ? 'bg-red-900/30 border-red-500/50 text-red-200'
-                            : 'bg-emerald-950/30 border-emerald-500/50 text-emerald-200'
+                            ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                     }`}
                 >
-                    {statusMessage.text}
+                    {statusMessage.isError ? <ShieldAlert size={14} /> : <Zap size={14} />}
+                    <span>{statusMessage.text}</span>
                 </div>
             )}
 
-            {/* Test Actions */}
-            <div className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 p-6 sm:p-8 rounded-3xl space-y-6">
-                <div>
-                    <h3 className="text-xl font-bold text-white mb-2">Simulate Feature Usage</h3>
-                    <p className="text-sm text-slate-400">
-                        Click below to simulate exporting a report. This will attempt to check your subscription rights and increment your usage.
-                    </p>
+            {/* Unified Tools & Testing Card */}
+            <div className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 p-6 rounded-3xl space-y-6 shadow-sm">
+                <div className="border-b border-[#1f293d]/40 pb-4">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Zap className="text-indigo-400" size={16} />
+                        <span>Tools & Testing</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-1">Simulate application usage and subscription timelines in real-time.</p>
                 </div>
 
-                <button
-                    onClick={handleIncrementUsage}
-                    disabled={isIncrementing || isTimeTraveling}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md shadow-indigo-600/10 cursor-pointer disabled:opacity-50 inline-flex items-center gap-2"
-                >
-                    {isIncrementing ? 'Exporting...' : 'Simulate Report Export 📥'}
-                </button>
-            </div>
+                {/* Sub-section 1: Usage Simulation */}
+                <div className="space-y-3">
+                    <div className="flex items-start gap-2.5">
+                        <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400 mt-0.5">
+                            <FileDown size={14} />
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-bold text-slate-200">Simulate Report Export</h4>
+                            <p className="text-[11px] text-slate-400 leading-normal mt-0.5">
+                                Increment report usage count. Checks feature availability and active plan limitations before processing.
+                            </p>
+                        </div>
+                    </div>
 
-            {/* Subscription Testing Widget */}
-            <div className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 p-6 sm:p-8 rounded-3xl space-y-6">
-                <div>
-                    <h3 className="text-xl font-bold text-white mb-2">Subscription Testing</h3>
-                    <p className="text-sm text-slate-400">
-                        Test your subscription expiry by fast-forwarding dates. Use the buttons below to simulate days passing.
-                    </p>
+                    <button
+                        onClick={handleIncrementUsage}
+                        disabled={isIncrementing || isTimeTraveling}
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow-sm shadow-indigo-600/15 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                        {isIncrementing ? 'Processing...' : 'Export Mock Report'}
+                    </button>
                 </div>
 
-                <div className="flex flex-wrap gap-4">
-                    <button
-                        onClick={() => handleTimeTravel(7)}
-                        disabled={isTimeTraveling || isIncrementing}
-                        className="bg-[#1f293d] hover:bg-[#2d3a54] border border-[#2d3a54] text-white font-semibold py-2 px-4 rounded-xl transition-all cursor-pointer text-sm disabled:opacity-50"
-                    >
-                        Fast Forward 7 Days
-                    </button>
-                    <button
-                        onClick={() => handleTimeTravel(30)}
-                        disabled={isTimeTraveling || isIncrementing}
-                        className="bg-[#1f293d] hover:bg-[#2d3a54] border border-[#2d3a54] text-white font-semibold py-2 px-4 rounded-xl transition-all cursor-pointer text-sm disabled:opacity-50"
-                    >
-                        Fast Forward 30 Days (Force Expiry)
-                    </button>
+                <div className="border-t border-[#1f293d]/30 pt-4 space-y-4">
+                    {/* Sub-section 2: Expiry & Time travel */}
+                    <div className="flex items-start gap-2.5">
+                        <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400 mt-0.5">
+                            <Clock size={14} />
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-bold text-slate-200">Subscription Expiry Simulation</h4>
+                            <p className="text-[11px] text-slate-400 leading-normal mt-0.5">
+                                Simulate subscription duration passing by fast-forwarding dates. Helps test access locks and feature limits.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => handleTimeTravel(7)}
+                            disabled={isTimeTraveling || isIncrementing}
+                            className="bg-[#121824] hover:bg-[#1f293d] border border-[#1f293d] text-slate-300 hover:text-white text-[11px] font-bold py-2 px-3 rounded-xl transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center"
+                        >
+                            +7 Days
+                        </button>
+                        <button
+                            onClick={() => handleTimeTravel(30)}
+                            disabled={isTimeTraveling || isIncrementing}
+                            className="bg-[#121824] hover:bg-[#1f293d] border border-[#1f293d] text-slate-300 hover:text-white text-[11px] font-bold py-2 px-3 rounded-xl transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center text-center"
+                        >
+                            +30 Days
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

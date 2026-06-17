@@ -64,15 +64,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {/* Right-side controls */}
             <div className="flex items-center gap-2 sm:gap-4">
               {user ? (
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <div className="hidden sm:flex flex-col text-right">
-                    <span className="text-sm font-semibold text-white">{user.name}</span>
-                    <span className="text-xs text-slate-500">{user.email}</span>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="hidden sm:flex items-center gap-3">
+                    <div className="flex flex-col text-right">
+                      <span className="text-sm font-bold text-white leading-tight">{user.name}</span>
+                      <span className="text-[11px] text-slate-500 font-medium">{user.email}</span>
+                    </div>
+                    {/* Circle Initials Avatar */}
+                    <div className="w-8 h-8 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 font-bold text-xs flex items-center justify-center select-none">
+                      {user.name ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
+                    </div>
                   </div>
                   <form action={handleLogout}>
                     <button
                       type="submit"
-                      className="bg-[#1f293d] hover:bg-[#2d3a54] text-white border border-[#2d3a54] text-sm font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer"
+                      className="bg-[#121824] hover:bg-[#1f293d] text-slate-300 hover:text-white border border-[#1f293d] text-xs font-bold px-3.5 py-2 rounded-lg transition-all duration-200 cursor-pointer shadow-sm shadow-black/10"
                     >
                       Sign Out
                     </button>
@@ -102,6 +108,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   ...(user
                     ? [
                         { href: '/dashboard', label: 'Dashboard' },
+                        { href: '/dashboard/billing', label: 'Billing History' },
                         { href: '/features/export-reports', label: 'Premium Reports' },
                       ]
                     : []),
