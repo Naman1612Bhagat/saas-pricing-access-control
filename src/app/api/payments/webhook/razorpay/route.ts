@@ -124,11 +124,19 @@ export async function POST(req: Request) {
 
         // Process successful payment and activate subscription using the unified service
         try {
-            await processSuccessfulPayment({
+            const result = await processSuccessfulPayment({
                 payload,
                 payment,
                 gatewayPaymentId: paymentId,
             })
+
+            if (result.alreadyProcessed) {
+                console.log(`[Razorpay Webhook] Payment for order ${orderId} already processed. Skipping.`)
+                return NextResponse.json({
+                    received: true,
+                    message: 'Payment already processed',
+                })
+            }
         } catch (err) {
             console.error(`[Razorpay Webhook] Failed to activate subscription for order ${orderId}:`, err)
             return NextResponse.json(

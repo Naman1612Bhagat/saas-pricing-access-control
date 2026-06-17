@@ -112,12 +112,19 @@ export async function POST(req: Request) {
 
         // 4. Process payment and activate subscription using the unified service
         try {
-            await processSuccessfulPayment({
+            const result = await processSuccessfulPayment({
                 payload,
                 payment,
                 gatewayPaymentId: razorpay_payment_id,
                 gatewaySignature: razorpay_signature,
             })
+
+            if (result.alreadyProcessed) {
+                return NextResponse.json({
+                    success: true,
+                    message: 'Payment has already been processed and verified',
+                })
+            }
         } catch (err) {
             console.error('Failed to process successful payment activation:', err)
             return NextResponse.json({ error: 'Failed to activate subscription' }, { status: 500 })

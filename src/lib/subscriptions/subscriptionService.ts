@@ -13,6 +13,11 @@ export interface ProcessSuccessfulPaymentInput {
     gatewaySignature?: string
 }
 
+export interface ProcessSuccessfulPaymentResult {
+    success: boolean
+    alreadyProcessed: boolean
+}
+
 // ─── Helper: expire active subscriptions ────────────────────────────────────
 
 /**
@@ -109,12 +114,33 @@ export async function processSuccessfulPayment({
     payment,
     gatewayPaymentId,
     gatewaySignature,
-}: ProcessSuccessfulPaymentInput): Promise<void> {
+}: ProcessSuccessfulPaymentInput): Promise<ProcessSuccessfulPaymentResult> {
+    // ── Pre-claim Idempotency check ──────────────────────────────────────────
+    // If the payment object passed is already marked 'paid', we can skip entirely.
+    if (payment.status === 'paid') {
+        payload.logger.info(
+            `[Subscription Service] Payment ${payment.id} is already marked as paid. Skipping activation.`,
+        )
+        return { success: true, alreadyProcessed: true }
+    }
+
+    // Double check database status directly, in case it was updated by another process
+    // after the local payment object was retrieved but before we hit the atomic query.
+    const freshPayment = await payload.findByID({
+        collection: 'payments',
+        id: payment.id,
+    })
+
+    if (freshPayment.status === 'paid') {
+        payload.logger.info(
+            `[Subscription Service] Payment ${payment.id} is already marked as paid in database. Skipping activation.`,
+        )
+        return { success: true, alreadyProcessed: true }
+    }
 
     // ── Step 1: Atomic claim ────────────────────────────────────────────────
     // Build the conditional UPDATE using drizzle's sql`` tagged template so
-    // parameters are safely bound and the type is SQL<unknown> as expected
-    // by payload.db.execute. The WHERE clause `status = 'created'` is the
+    // parameters are safely bound. The WHERE clause `status = 'created'` is the
     // compare-and-swap. Only one concurrent caller will succeed.
     const claimQuery = gatewaySignature != null
         ? sql`UPDATE payments
@@ -127,7 +153,11 @@ export async function processSuccessfulPayment({
                     razorpay_payment_id = ${gatewayPaymentId}
              WHERE  id = ${payment.id} AND status = 'created'`
 
-    const claimResult = await payload.db.execute({ sql: claimQuery })
+    const drizzle = (payload.db as any).drizzle
+    if (!drizzle) {
+        throw new Error('Drizzle database client is not available on payload.db')
+    }
+    const claimResult = await drizzle.execute(claimQuery)
 
     // rowCount = 0 → another process already claimed this payment (webhook or
     // verify route). Return immediately without creating a duplicate subscription.
@@ -137,7 +167,7 @@ export async function processSuccessfulPayment({
         payload.logger.info(
             `[Subscription Service] Payment ${payment.id} already claimed by another process. Skipping duplicate activation.`,
         )
-        return
+        return { success: true, alreadyProcessed: true }
     }
 
     // ── Step 2: Activate subscription (in a Payload transaction) ───────────
@@ -179,6 +209,7 @@ export async function processSuccessfulPayment({
         payload.logger.info(
             `[Subscription Service] Successfully activated subscription for user ${userId} on plan ${planId}.`,
         )
+        return { success: true, alreadyProcessed: false }
     } catch (error) {
         if (hasTransactions && transactionID != null) {
             try {
