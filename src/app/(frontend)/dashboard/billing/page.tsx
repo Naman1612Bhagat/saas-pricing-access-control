@@ -53,16 +53,34 @@ export default async function BillingHistoryPage() {
         }
     }
 
-    // Helper to format date strings
+    // Helper to format date strings explicitly in Asia/Kolkata timezone
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-IN', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-        })
+        try {
+            const d = new Date(dateStr)
+            const formatter = new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+            })
+            const parts = formatter.formatToParts(d)
+            const partMap = Object.fromEntries(parts.map(p => [p.type, p.value]))
+            
+            const day = partMap.day
+            const month = partMap.month
+            const year = partMap.year
+            const hour = partMap.hour
+            const minute = partMap.minute
+            const dayPeriod = (partMap.dayPeriod || '').toUpperCase()
+            
+            return `${day} ${month} ${year}, ${hour}:${minute} ${dayPeriod}`
+        } catch (err) {
+            console.error('Error formatting date:', err)
+            return dateStr
+        }
     }
 
     // Helper to render status badges with precise colors

@@ -118,7 +118,12 @@ export default async function DashboardPage() {
             let isButtonDisabled = false
 
             if (!isSubActive) {
-                const endedDate = new Date(subscription.expiryDate).toLocaleDateString('en-IN')
+                const endedDate = new Intl.DateTimeFormat('en-IN', {
+                    timeZone: 'Asia/Kolkata',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                }).format(new Date(subscription.expiryDate))
                 lockReasonText = `Subscription expired on ${endedDate}.`
                 statusBadge = 'Locked'
                 buttonText = 'Upgrade Plan'
@@ -234,16 +239,14 @@ export default async function DashboardPage() {
 
         daysRemaining = Math.max(0, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
         
-        formattedStart = start.toLocaleDateString('en-IN', {
+        const dateOnlyFormatter = new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
             day: 'numeric',
             month: 'short',
             year: 'numeric',
         })
-        formattedExpiry = expiry.toLocaleDateString('en-IN', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-        })
+        formattedStart = dateOnlyFormatter.format(start)
+        formattedExpiry = dateOnlyFormatter.format(expiry)
     }
 
     const formatPrice = (amount: number) => {

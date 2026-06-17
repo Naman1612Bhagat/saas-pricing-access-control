@@ -133,7 +133,12 @@ export default async function ExportReportsPage() {
     if (!subscription) {
         lockReason = 'No active subscription found. You must subscribe to a pricing plan to access this feature.'
     } else if (!isSubActive) {
-        const endedDate = new Date(subscription.expiryDate).toLocaleDateString('en-IN')
+        const endedDate = new Intl.DateTimeFormat('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+        }).format(new Date(subscription.expiryDate))
         lockReason = `Your active subscription has expired (ended on ${endedDate}).`
     } else if (!exportReportsFeature) {
         lockReason = 'The Premium Reports feature is not registered in the database.'
