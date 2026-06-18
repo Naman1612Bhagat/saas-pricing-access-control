@@ -5,8 +5,15 @@ import config from '@/payload.config'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { Payment } from '@/payload-types'
+import { InvoiceDownloadButton } from './InvoiceDownloadButton'
 
 export const dynamic = 'force-dynamic'
+
+/** Returns the formatted invoice number for a payment. */
+function buildInvoiceNumber(payment: { id: number; createdAt: string }): string {
+    const year = new Date(payment.createdAt).getFullYear()
+    return `INV-${year}-${payment.id.toString().padStart(4, '0')}`
+}
 
 export default async function BillingHistoryPage() {
     const headers = await getHeaders()
@@ -68,14 +75,14 @@ export default async function BillingHistoryPage() {
             })
             const parts = formatter.formatToParts(d)
             const partMap = Object.fromEntries(parts.map(p => [p.type, p.value]))
-            
+
             const day = partMap.day
             const month = partMap.month
             const year = partMap.year
             const hour = partMap.hour
             const minute = partMap.minute
             const dayPeriod = (partMap.dayPeriod || '').toUpperCase()
-            
+
             return `${day} ${month} ${year}, ${hour}:${minute} ${dayPeriod}`
         } catch (err) {
             console.error('Error formatting date:', err)
@@ -137,7 +144,7 @@ export default async function BillingHistoryPage() {
                         <div className="space-y-2">
                             <h2 className="text-xl font-bold text-white">No payment history found</h2>
                             <p className="text-sm text-slate-400">
-                                You haven't made any plan transactions yet. If you recently attempted a checkout, it will appear here.
+                                You haven&apos;t made any plan transactions yet. If you recently attempted a checkout, it will appear here.
                             </p>
                         </div>
                         <Link
@@ -161,13 +168,18 @@ export default async function BillingHistoryPage() {
                                             <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
                                             <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Order / Payment ID</th>
                                             <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Date</th>
+                                            <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Invoice</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#1f293d]/40">
                                         {payments.map((payment) => {
-                                            const planName = payment.plan && typeof payment.plan === 'object' 
-                                                ? payment.plan.name 
-                                                : 'Unknown Plan'
+                                            const planName =
+                                                payment.plan && typeof payment.plan === 'object'
+                                                    ? payment.plan.name
+                                                    : 'Unknown Plan'
+                                            const invoiceNumber = buildInvoiceNumber(payment)
+                                            const isPaid = payment.status === 'paid'
+
                                             return (
                                                 <tr key={payment.id} className="hover:bg-[#182030]/30 transition-colors">
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white">
@@ -197,6 +209,18 @@ export default async function BillingHistoryPage() {
                                                     <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-400">
                                                         {formatDate(payment.createdAt)}
                                                     </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        {isPaid ? (
+                                                            <InvoiceDownloadButton
+                                                                paymentId={payment.id}
+                                                                invoiceNumber={invoiceNumber}
+                                                            />
+                                                        ) : (
+                                                            <span className="text-xs text-slate-600 font-medium italic">
+                                                                {payment.status === 'failed' ? 'Not available' : 'Pending'}
+                                                            </span>
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             )
                                         })}
@@ -208,12 +232,16 @@ export default async function BillingHistoryPage() {
                         {/* Mobile Cards View (Visible on extra-small screens below sm) */}
                         <div className="block sm:hidden space-y-4">
                             {payments.map((payment) => {
-                                const planName = payment.plan && typeof payment.plan === 'object' 
-                                    ? payment.plan.name 
-                                    : 'Unknown Plan'
+                                const planName =
+                                    payment.plan && typeof payment.plan === 'object'
+                                        ? payment.plan.name
+                                        : 'Unknown Plan'
+                                const invoiceNumber = buildInvoiceNumber(payment)
+                                const isPaid = payment.status === 'paid'
+
                                 return (
-                                    <div 
-                                        key={payment.id} 
+                                    <div
+                                        key={payment.id}
                                         className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 p-5 rounded-2xl space-y-4 shadow-sm"
                                     >
                                         <div className="flex justify-between items-start">
@@ -253,6 +281,34 @@ export default async function BillingHistoryPage() {
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* Invoice download — only for paid payments */}
+                                        {isPaid ? (
+                                            <InvoiceDownloadButton
+                                                paymentId={payment.id}
+                                                invoiceNumber={invoiceNumber}
+                                                compact
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl border border-[#1f293d]/30 text-slate-600 text-xs font-medium">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="12"
+                                                    height="12"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                >
+                                                    <circle cx="12" cy="12" r="10" />
+                                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                                </svg>
+                                                Invoice not available
+                                            </div>
+                                        )}
                                     </div>
                                 )
                             })}
