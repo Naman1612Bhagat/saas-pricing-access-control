@@ -13,6 +13,7 @@ import { Plans } from './collections/Plans'
 import { Subscriptions } from './collections/Subscriptions'
 import { FeatureUsages } from './collections/FeatureUsages'
 import { Payments } from './collections/Payments'
+import { PaymentGatewaySettings } from './collections/PaymentGatewaySettings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -32,6 +33,7 @@ export default buildConfig({
     Subscriptions,
     FeatureUsages,
     Payments,
+    PaymentGatewaySettings,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 type Props = {
@@ -10,9 +10,38 @@ type Props = {
     ctaText?: string
 }
 
+interface EnabledGateway {
+    gateway: 'razorpay' | 'cashfree'
+    displayName: string
+    description?: string | null
+}
+
 export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, ctaText }: Props) {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
+    const [enabledGateways, setEnabledGateways] = useState<EnabledGateway[]>([])
+    const [isLoadingGateways, setIsLoadingGateways] = useState(true)
+
+    useEffect(() => {
+        let isMounted = true
+        fetch('/api/payments/gateways')
+            .then((res) => res.json())
+            .then((data) => {
+                if (isMounted) {
+                    setEnabledGateways(data)
+                    setIsLoadingGateways(false)
+                }
+            })
+            .catch((err) => {
+                console.error('Failed to fetch active payment gateways:', err)
+                if (isMounted) {
+                    setIsLoadingGateways(false)
+                }
+            })
+        return () => {
+            isMounted = false
+        }
+    }, [])
     const [error, setError] = useState<string | null>(null)
     const [showGatewaySelection, setShowGatewaySelection] = useState(false)
 
@@ -206,6 +235,16 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
         )
     }
 
+    if (!isLoadingGateways && enabledGateways.length === 0) {
+        return (
+            <div className="w-full">
+                <p className="text-center text-xs text-amber-400 font-medium bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl leading-relaxed">
+                    No payment gateways are currently available. Please try again later.
+                </p>
+            </div>
+        )
+    }
+
     if (showGatewaySelection) {
         return (
             <div className="w-full bg-[#111827]/60 border border-slate-700/40 p-4 rounded-xl space-y-3 text-left">
@@ -216,23 +255,37 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
                 )}
 
                 <div className="space-y-2">
-                    <button
-                        onClick={() => handleSubscribe('razorpay')}
-                        disabled={isLoading}
-                        className="w-full flex items-center justify-between bg-indigo-600/15 hover:bg-indigo-600/25 border border-indigo-500/30 text-indigo-200 font-semibold py-2.5 px-4 rounded-xl active:scale-[0.98] transition-all cursor-pointer text-sm disabled:opacity-50"
-                    >
-                        <span>Razorpay</span>
-                        <span className="text-[10px] text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full font-bold">Popular</span>
-                    </button>
-                    
-                    <button
-                        onClick={() => handleSubscribe('cashfree')}
-                        disabled={isLoading}
-                        className="w-full flex items-center justify-between bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-200 font-semibold py-2.5 px-4 rounded-xl active:scale-[0.98] transition-all cursor-pointer text-sm disabled:opacity-50"
-                    >
-                        <span>Cashfree</span>
-                        <span className="text-[10px] uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">Available</span>
-                    </button>
+                    {enabledGateways.map((g) => {
+                        const isRazorpay = g.gateway === 'razorpay'
+                        const themeClasses = isRazorpay
+                            ? "bg-indigo-600/15 hover:bg-indigo-600/25 border border-indigo-500/30 text-indigo-200"
+                            : "bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-200"
+                        const badgeClasses = isRazorpay
+                            ? "text-indigo-400 bg-indigo-500/10"
+                            : "text-emerald-400 bg-emerald-500/10"
+                        const badgeText = isRazorpay ? "Popular" : "Available"
+
+                        return (
+                            <button
+                                key={g.gateway}
+                                onClick={() => handleSubscribe(g.gateway)}
+                                disabled={isLoading}
+                                className={`w-full flex items-center justify-between font-semibold py-2.5 px-4 rounded-xl active:scale-[0.98] transition-all cursor-pointer text-sm disabled:opacity-50 ${themeClasses}`}
+                            >
+                                <div className="flex flex-col text-left">
+                                    <span>{g.displayName}</span>
+                                    {g.description && (
+                                        <span className="text-[9px] font-normal text-slate-400 mt-0.5 max-w-[200px] leading-snug">
+                                            {g.description}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${badgeClasses}`}>
+                                    {badgeText}
+                                </span>
+                            </button>
+                        )
+                    })}
                 </div>
                 
                 <button
@@ -256,17 +309,22 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
             )}
             <button
                 onClick={async () => {
+                    if (isLoadingGateways) return
                     if (!isLoggedIn) {
                         router.push('/login')
                         return
                     }
                     setError(null)
-                    setShowGatewaySelection(true)
+                    if (enabledGateways.length === 1) {
+                        handleSubscribe(enabledGateways[0].gateway)
+                    } else {
+                        setShowGatewaySelection(true)
+                    }
                 }}
-                disabled={isLoading}
+                disabled={isLoading || isLoadingGateways}
                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/10 active:scale-[0.98] transition-all cursor-pointer text-center text-sm disabled:opacity-50"
             >
-                {isLoading ? 'Processing...' : (ctaText || (isLoggedIn ? 'Subscribe Now' : 'Sign in to Subscribe'))}
+                {isLoading ? 'Processing...' : isLoadingGateways ? 'Loading...' : (ctaText || (isLoggedIn ? 'Subscribe Now' : 'Sign in to Subscribe'))}
             </button>
         </div>
     )

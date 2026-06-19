@@ -38,6 +38,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unsupported payment gateway' }, { status: 400 })
         }
 
+        // Verify if payment gateway is enabled
+        const gatewaySettings = await payload.find({
+            collection: 'payment-gateway-settings',
+            where: {
+                gateway: {
+                    equals: gateway,
+                },
+            },
+            limit: 1,
+        })
+        const settingDoc = gatewaySettings.docs[0]
+        if (settingDoc && !settingDoc.isEnabled) {
+            return NextResponse.json({ error: 'Selected payment gateway is disabled or unavailable' }, { status: 400 })
+        }
+
         // 1. Fetch Plan Document
         let plan
         try {

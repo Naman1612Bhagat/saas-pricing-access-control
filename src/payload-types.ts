@@ -74,6 +74,7 @@ export interface Config {
     subscriptions: Subscription;
     'feature-usages': FeatureUsage;
     payments: Payment;
+    'payment-gateway-settings': PaymentGatewaySetting;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -88,6 +89,7 @@ export interface Config {
     subscriptions: SubscriptionsSelect<false> | SubscriptionsSelect<true>;
     'feature-usages': FeatureUsagesSelect<false> | FeatureUsagesSelect<true>;
     payments: PaymentsSelect<false> | PaymentsSelect<true>;
+    'payment-gateway-settings': PaymentGatewaySettingsSelect<false> | PaymentGatewaySettingsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -255,6 +257,21 @@ export interface Payment {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-gateway-settings".
+ */
+export interface PaymentGatewaySetting {
+  id: number;
+  gateway: 'razorpay' | 'cashfree';
+  displayName: string;
+  isEnabled: boolean;
+  isTestMode: boolean;
+  sortOrder: number;
+  description?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -304,6 +321,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'payments';
         value: number | Payment;
+      } | null)
+    | ({
+        relationTo: 'payment-gateway-settings';
+        value: number | PaymentGatewaySetting;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -463,6 +484,20 @@ export interface PaymentsSelect<T extends boolean = true> {
   razorpayPaymentId?: T;
   razorpaySignature?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-gateway-settings_select".
+ */
+export interface PaymentGatewaySettingsSelect<T extends boolean = true> {
+  gateway?: T;
+  displayName?: T;
+  isEnabled?: T;
+  isTestMode?: T;
+  sortOrder?: T;
+  description?: T;
   updatedAt?: T;
   createdAt?: T;
 }
