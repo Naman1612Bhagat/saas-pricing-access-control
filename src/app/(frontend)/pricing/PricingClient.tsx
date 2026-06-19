@@ -49,19 +49,18 @@ function getPlanDescription(planName: string): string {
 function getPlanSummary(planName: string): string {
     const name = planName.toLowerCase()
     if (name.includes('basic') || name.includes('free') || name.includes('hobby') || name.includes('starter')) {
-        return '3 Features Included'
+        return '⭐ Starter Plan'
     }
     if (name.includes('intermediate') || name.includes('pro')) {
-        return 'Growing Business Plan'
+        return '📈 Growing Business Plan'
     }
     if (name.includes('premium')) {
-        return 'Unlimited Access'
+        return '🚀 Unlimited Access'
     }
     return ''
 }
 
 export default function PricingClient({ plans, features, currentPlanId, currentPlanExpiryDate, isLoggedIn }: PricingClientProps) {
-    const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly')
     const [openFaq, setOpenFaq] = useState<number | null>(0) // First FAQ item open by default
 
     const toggleFaq = (index: number) => {
@@ -107,34 +106,8 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                     </p>
                 </div>
 
-                {/* 2. Billing Toggle & Credibility Section */}
+                {/* 2. Credibility Section */}
                 <div className="flex flex-col items-center space-y-6">
-                    <div className="relative bg-[#121824]/90 p-1 rounded-full border border-slate-800 flex items-center space-x-1">
-                        <button
-                            onClick={() => setBillingPeriod('monthly')}
-                            className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                                billingPeriod === 'monthly'
-                                    ? 'bg-indigo-600 text-white shadow-md'
-                                    : 'text-slate-400 hover:text-slate-200'
-                            }`}
-                        >
-                            Monthly
-                        </button>
-                        <button
-                            onClick={() => setBillingPeriod('yearly')}
-                            className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all cursor-pointer flex items-center gap-1.5 ${
-                                billingPeriod === 'yearly'
-                                    ? 'bg-indigo-600 text-white shadow-md'
-                                    : 'text-slate-400 hover:text-slate-200'
-                            }`}
-                        >
-                            <span>Yearly</span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 animate-pulse">
-                                Save 20%
-                            </span>
-                        </button>
-                    </div>
-
                     {/* Small Credibility Section */}
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-slate-500 py-1 text-[10px] uppercase font-bold tracking-widest">
                         <span>Trusted Payments Powered By</span>
@@ -170,10 +143,8 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                             const isPopular = plan.name.toLowerCase().includes('intermediate')
                             const isActiveUserPlan = currentPlanId && String(currentPlanId) === String(plan.id)
 
-                            // Apply 20% discount on yearly toggle
-                            const displayPrice = billingPeriod === 'yearly' ? Math.round(plan.price * 12 * 0.8) : plan.price
-                            const isYearlyPlan = billingPeriod === 'yearly' || plan.validityDays === 365
-                            const displayPeriodText = isYearlyPlan ? 'year' : `${plan.validityDays} days`
+                            const displayPrice = plan.price
+                            const displayPeriodText = `${plan.validityDays} days`
 
                             return (
                                 <div
@@ -228,11 +199,6 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                                                 </span>
                                                 <span className="text-slate-400 text-xs ml-2">/ {displayPeriodText}</span>
                                             </div>
-                                            {isYearlyPlan && (
-                                                <div className="text-[10px] text-emerald-400 font-semibold mt-1">
-                                                    billed annually
-                                                </div>
-                                            )}
                                         </div>
 
                                         <hr className="border-[#1f293d]/50 my-6" />
