@@ -31,7 +31,7 @@ export default async function DashboardPage() {
     try {
         const authResult = await payload.auth({ headers })
         user = authResult.user
-    } catch (e) {
+    } catch {
     }
 
     if (!user) {

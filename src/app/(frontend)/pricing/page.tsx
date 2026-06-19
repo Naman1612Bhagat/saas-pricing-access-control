@@ -15,7 +15,7 @@ export default async function PricingPage() {
     try {
         const authResult = await payload.auth({ headers })
         user = authResult.user
-    } catch (e) {
+    } catch {
     }
 
     const plansResult = await payload.find({
