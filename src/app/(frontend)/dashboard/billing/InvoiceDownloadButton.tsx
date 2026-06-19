@@ -4,24 +4,12 @@ import { useState } from 'react'
 
 interface InvoiceDownloadButtonProps {
     paymentId: number
-    /** Pre-computed invoice number, e.g. INV-2026-0001 */
     invoiceNumber: string
-    /** Compact variant for mobile card view */
     compact?: boolean
 }
 
-// ─── PDF-safe formatters ──────────────────────────────────────────────────────
-
-/**
- * Formats a currency amount without the ₹ symbol.
- *
- * jsPDF ships with only the core-14 PDF fonts (Helvetica, Times, Courier).
- * None of them include the Indian Rupee sign (U+20B9), so Intl.NumberFormat
- * with `style: 'currency'` produces a placeholder glyph (e.g. "¹899").
- *
- * We use a plain number formatter and prepend the ISO currency code so the
- * output is always legible: "INR 899", "USD 49", etc.
- */
+// jsPDF standard fonts do not support the Rupee sign (U+20B9).
+// We use ISO currency codes to avoid glyph rendering issues in generated PDFs.
 function pdfSafeCurrency(amount: number, currency: string): string {
     const code = (currency || 'INR').toUpperCase()
     try {
@@ -35,10 +23,6 @@ function pdfSafeCurrency(amount: number, currency: string): string {
     }
 }
 
-/**
- * Formats a date string as a short date in Asia/Kolkata timezone.
- * Example: "18 June 2026"
- */
 function fmtDate(dateStr: string): string {
     try {
         return new Intl.DateTimeFormat('en-IN', {
@@ -52,10 +36,6 @@ function fmtDate(dateStr: string): string {
     }
 }
 
-/**
- * Formats a date string as a full date + time in IST (Asia/Kolkata).
- * Example: "18 Jun 2026, 12:16 AM IST"
- */
 function fmtDateTimeIST(dateStr: string): string {
     try {
         const d = new Date(dateStr)
@@ -77,12 +57,6 @@ function fmtDateTimeIST(dateStr: string): string {
     }
 }
 
-// ─── PDF generation ───────────────────────────────────────────────────────────
-
-/**
- * Generates and downloads a professional invoice PDF using jsPDF.
- * All PDF generation happens in the browser — no server canvas dependency.
- */
 async function generateAndDownloadPDF(
     invoice: {
         id: number
@@ -98,32 +72,29 @@ async function generateAndDownloadPDF(
     },
     invoiceNumber: string,
 ) {
-    // Dynamic import → client-side only, no Node canvas dependency
+    // Dynamic import to prevent server-side Node canvas dependency.
     const { jsPDF } = await import('jspdf')
 
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
-    const PW = doc.internal.pageSize.getWidth()   // 210 mm
-    const PH = doc.internal.pageSize.getHeight()  // 297 mm
+    const PW = doc.internal.pageSize.getWidth()
+    const PH = doc.internal.pageSize.getHeight()
 
-    const INDIGO = [99,  102, 241] as const   // #6366f1
-    const DARK   = [11,  15,  25 ] as const   // #0b0f19
-    const SLATE  = [148, 163, 184] as const   // slate-400
+    const INDIGO = [99,  102, 241] as const
+    const DARK   = [11,  15,  25 ] as const
+    const SLATE  = [148, 163, 184] as const
     const WHITE  = [255, 255, 255] as const
-    const BLACK  = [15,  23,  42 ] as const   // slate-900
-    const GREEN  = [52,  211, 153] as const   // emerald-400
-    const MUTED  = [100, 116, 139] as const   // slate-500
+    const BLACK  = [15,  23,  42 ] as const
+    const GREEN  = [52,  211, 153] as const
+    const MUTED  = [100, 116, 139] as const
 
-    // ─── 1. Dark header band ─────────────────────────────────────────────────
     const HEADER_H = 60
     doc.setFillColor(...DARK)
     doc.rect(0, 0, PW, HEADER_H, 'F')
 
-    // Indigo left-edge accent bar
     doc.setFillColor(...INDIGO)
     doc.rect(0, 0, 5, HEADER_H, 'F')
 
-    // Brand name — "Access" white, "Shield" indigo
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(20)
     doc.setTextColor(...WHITE)
@@ -132,39 +103,32 @@ async function generateAndDownloadPDF(
     const accessW = doc.getTextWidth('Access')
     doc.text('Shield', 14 + accessW, 22)
 
-    // Tagline
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(...SLATE)
     doc.text('SaaS Access Control Platform', 14, 30)
 
-    // Company contact details below tagline
     doc.setFontSize(7.5)
-    doc.setTextColor(107, 114, 128)   // gray-500 — subtler than SLATE
+    doc.setTextColor(107, 114, 128)
     doc.text('support@accessshield.app  |  accessshield.app', 14, 37)
 
-    // "INVOICE" label — right-aligned
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(26)
     doc.setTextColor(...INDIGO)
     doc.text('INVOICE', PW - 14, 24, { align: 'right' })
 
-    // Invoice number below the label
     doc.setFontSize(9)
     doc.setTextColor(...SLATE)
     doc.text(invoiceNumber, PW - 14, 33, { align: 'right' })
 
-    // ─── 2. White content area ────────────────────────────────────────────────
     doc.setFillColor(...WHITE)
     doc.rect(0, HEADER_H, PW, PH - HEADER_H, 'F')
 
-    let y = HEADER_H + 14   // current vertical cursor
+    let y = HEADER_H + 14
 
-    // ─── 3. Bill To / Invoice Details — two columns ──────────────────────────
     const col1 = 14
     const col2 = PW / 2 + 4
 
-    // Section label row
     doc.setFontSize(7.5)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...SLATE)
@@ -173,25 +137,21 @@ async function generateAndDownloadPDF(
 
     y += 6
 
-    // Customer name
     doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...BLACK)
     doc.text(invoice.customer.name || 'Customer', col1, y)
 
-    // Customer email
     doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(...MUTED)
     doc.text(invoice.customer.email || '—', col1, y + 6)
 
-    // Invoice meta rows — right column
-    // Payment date row uses full date+time in IST
     const metaRows: [string, string, boolean][] = [
         ['Invoice Number', invoiceNumber,                           false],
         ['Invoice Date',   fmtDate(invoice.createdAt),             false],
         ['Payment Date',   fmtDateTimeIST(invoice.createdAt),      false],
-        ['Payment Status', 'PAID',                                  true],  // last flag = green
+        ['Payment Status', 'PAID',                                  true],
     ]
 
     let metaY = y
@@ -207,17 +167,13 @@ async function generateAndDownloadPDF(
         metaY += 7
     }
 
-    // Advance y past the taller of the two columns
     y += Math.max(12, metaRows.length * 7) + 6
 
-    // ─── 4. Thin divider ──────────────────────────────────────────────────────
     doc.setDrawColor(226, 232, 240)
     doc.setLineWidth(0.4)
     doc.line(14, y, PW - 14, y)
     y += 10
 
-    // ─── 5. Line-items table ──────────────────────────────────────────────────
-    // Header row background
     doc.setFillColor(248, 250, 252)
     doc.rect(14, y - 4, PW - 28, 10, 'F')
 
@@ -229,7 +185,6 @@ async function generateAndDownloadPDF(
 
     y += 14
 
-    // Single line item
     doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(...BLACK)
@@ -240,12 +195,11 @@ async function generateAndDownloadPDF(
 
     doc.setFontSize(8.5)
     doc.setTextColor(...MUTED)
-    const gatewayLabel = invoice.gateway === 'razorpay' ? 'Razorpay' : invoice.gateway
+    const gatewayLabel = invoice.gateway === 'razorpay' ? 'Razorpay' : invoice.gateway === 'paypal' ? 'PayPal' : invoice.gateway === 'cashfree' ? 'Cashfree' : invoice.gateway
     doc.text(`Payment via ${gatewayLabel}`, col1 + 2, y)
 
     y += 12
 
-    // ─── 6. Totals section ────────────────────────────────────────────────────
     doc.setDrawColor(226, 232, 240)
     doc.setLineWidth(0.4)
     doc.line(PW / 2, y, PW - 14, y)
@@ -267,7 +221,6 @@ async function generateAndDownloadPDF(
     doc.line(PW / 2, y, PW - 14, y)
     y += 7
 
-    // Total row — indigo-tinted highlight
     doc.setFillColor(238, 242, 255)
     doc.roundedRect(PW / 2 - 2, y - 5, PW - 14 - (PW / 2 - 2) + 2, 11, 2, 2, 'F')
     doc.setFontSize(12)
@@ -278,7 +231,6 @@ async function generateAndDownloadPDF(
 
     y += 18
 
-    // ─── 7. Payment reference box ─────────────────────────────────────────────
     const REF_BOX_H = 46
     doc.setFillColor(248, 250, 252)
     doc.roundedRect(14, y, PW - 28, REF_BOX_H, 3, 3, 'F')
@@ -295,7 +247,7 @@ async function generateAndDownloadPDF(
     y += 7
 
     const refRows: [string, string][] = [
-        ['Gateway',    invoice.gateway === 'razorpay' ? 'Razorpay' : invoice.gateway],
+        ['Gateway',    invoice.gateway === 'razorpay' ? 'Razorpay' : invoice.gateway === 'paypal' ? 'PayPal' : invoice.gateway === 'cashfree' ? 'Cashfree' : invoice.gateway],
         ['Order ID',   invoice.gatewayOrderId],
         ['Payment ID', invoice.gatewayPaymentId ?? '—'],
         ['Currency',   (invoice.currency || 'INR').toUpperCase()],
@@ -313,10 +265,9 @@ async function generateAndDownloadPDF(
 
     y += 10
 
-    // ─── 8. Auto-generated note ───────────────────────────────────────────────
     doc.setFontSize(7.5)
     doc.setFont('helvetica', 'italic')
-    doc.setTextColor(148, 163, 184)   // slate-400
+    doc.setTextColor(148, 163, 184)
     doc.text(
         'This invoice was automatically generated by AccessShield. No signature required.',
         PW / 2,
@@ -324,22 +275,20 @@ async function generateAndDownloadPDF(
         { align: 'center' },
     )
 
-    // ─── 9. Footer band ───────────────────────────────────────────────────────
+    y += 10
+
     const FOOTER_H = 32
     doc.setFillColor(...DARK)
     doc.rect(0, PH - FOOTER_H, PW, FOOTER_H, 'F')
 
-    // Indigo left accent on footer
     doc.setFillColor(...INDIGO)
     doc.rect(0, PH - FOOTER_H, 5, FOOTER_H, 'F')
 
-    // Thank-you line
     doc.setFontSize(10)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...WHITE)
     doc.text('Thank you for choosing AccessShield!', PW / 2, PH - FOOTER_H + 12, { align: 'center' })
 
-    // Contact + website
     doc.setFontSize(7.5)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(...SLATE)
@@ -350,7 +299,6 @@ async function generateAndDownloadPDF(
         { align: 'center' },
     )
 
-    // Tiny copyright line
     doc.setFontSize(6.5)
     doc.setTextColor(71, 85, 105)
     doc.text(
@@ -360,11 +308,8 @@ async function generateAndDownloadPDF(
         { align: 'center' },
     )
 
-    // ─── 10. Save ─────────────────────────────────────────────────────────────
     doc.save(`${invoiceNumber}.pdf`)
 }
-
-// ─── React component ──────────────────────────────────────────────────────────
 
 export function InvoiceDownloadButton({
     paymentId,
@@ -385,7 +330,7 @@ export function InvoiceDownloadButton({
                 try {
                     const data = await res.json()
                     if (data?.error) msg = data.error
-                } catch { /* ignore JSON parse failure */ }
+                } catch { }
                 alert(msg)
                 return
             }
@@ -400,7 +345,6 @@ export function InvoiceDownloadButton({
         }
     }
 
-    // ── Spinner SVG (shared) ──────────────────────────────────────────────────
     const Spinner = ({ size }: { size: number }) => (
         <svg
             className="animate-spin"
@@ -414,7 +358,6 @@ export function InvoiceDownloadButton({
         </svg>
     )
 
-    // ── Download icon SVG (shared) ────────────────────────────────────────────
     const DownloadIcon = ({ size }: { size: number }) => (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -434,7 +377,6 @@ export function InvoiceDownloadButton({
     )
 
     if (compact) {
-        // ── Mobile / compact variant ──────────────────────────────────────────
         return (
             <button
                 onClick={handleDownload}
@@ -460,7 +402,6 @@ export function InvoiceDownloadButton({
         )
     }
 
-    // ── Table / default variant ───────────────────────────────────────────────
     return (
         <button
             onClick={handleDownload}

@@ -9,12 +9,10 @@ export const Payments: CollectionConfig = {
 
     access: {
         read: ({ req }) => {
-            // Admin can see all payments
             if (req.user?.role === 'admin') {
                 return true
             }
 
-            // Users can only see their own payments
             return {
                 user: {
                     equals: req.user?.id,
@@ -69,6 +67,10 @@ export const Payments: CollectionConfig = {
                 {
                     label: 'Cashfree',
                     value: 'cashfree',
+                },
+                {
+                    label: 'PayPal',
+                    value: 'paypal',
                 },
             ],
             required: true,

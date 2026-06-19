@@ -24,8 +24,8 @@ export const Users: CollectionConfig = {
     read: isAdminOrSelf,
     update: isAdminOrSelf,
     delete: isAdmin,
-    create: () => true, // Anyone can register
-    admin: ({ req }) => Boolean(req.user && req.user.role === 'admin'), // Strictly typed boolean function
+    create: () => true,
+    admin: ({ req }) => Boolean(req.user && req.user.role === 'admin'),
   },
   fields: [
     {

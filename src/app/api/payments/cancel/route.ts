@@ -2,10 +2,6 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
-/**
- * Endpoint to handle payment cancellations from the client checkout modal.
- * Marks the matching payment record's status as 'failed'.
- */
 export async function POST(req: Request) {
     try {
         const payload = await getPayload({ config })
@@ -26,9 +22,18 @@ export async function POST(req: Request) {
             where: {
                 and: [
                     {
-                        razorpayOrderId: {
-                            equals: orderId,
-                        },
+                        or: [
+                            {
+                                gatewayOrderId: {
+                                    equals: orderId,
+                                },
+                            },
+                            {
+                                razorpayOrderId: {
+                                    equals: orderId,
+                                },
+                            },
+                        ],
                     },
                     {
                         user: {

@@ -17,10 +17,6 @@ interface RazorpayWebhookPayload {
     }
 }
 
-/**
- * Handles incoming Razorpay webhook events to safely activate subscriptions.
- * Validates HMAC signature, prevents duplicate processing, and executes updates inside transactions.
- */
 export async function POST(req: Request) {
     try {
         const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
@@ -58,7 +54,6 @@ export async function POST(req: Request) {
             )
         }
 
-        // Safely parse JSON body
         let event: RazorpayWebhookPayload
         try {
             event = JSON.parse(rawBody) as RazorpayWebhookPayload
@@ -72,7 +67,6 @@ export async function POST(req: Request) {
 
         const eventType = event.event
 
-        // Check if event is supported
         if (eventType !== 'payment.captured' && eventType !== 'order.paid') {
             console.log(`[Razorpay Webhook] Ignoring unsupported event type: "${eventType}"`)
             return NextResponse.json({ received: true, ignored: true })
@@ -92,7 +86,6 @@ export async function POST(req: Request) {
 
         const payload = await getPayload({ config })
 
-        // Retrieve local Payment record
         const paymentResult = await payload.find({
             collection: 'payments',
             where: {
@@ -122,7 +115,6 @@ export async function POST(req: Request) {
             })
         }
 
-        // Process successful payment and activate subscription using the unified service
         try {
             const result = await processSuccessfulPayment({
                 payload,

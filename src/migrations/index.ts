@@ -3,6 +3,7 @@ import * as migration_20260615_144408 from './20260615_144408';
 import * as migration_20260616_150445_add_cashfree_gateway from './20260616_150445_add_cashfree_gateway';
 import * as migration_20260618_143400_refactor_payments_gateway_neutral from './20260618_143400_refactor_payments_gateway_neutral';
 import * as migration_20260619_084723_add_payment_gateway_settings from './20260619_084723_add_payment_gateway_settings';
+import * as migration_20260619_150224_add_paypal_gateway from './20260619_150224_add_paypal_gateway';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20260619_084723_add_payment_gateway_settings.up,
     down: migration_20260619_084723_add_payment_gateway_settings.down,
-    name: '20260619_084723_add_payment_gateway_settings'
+    name: '20260619_084723_add_payment_gateway_settings',
+  },
+  {
+    up: migration_20260619_150224_add_paypal_gateway.up,
+    down: migration_20260619_150224_add_paypal_gateway.down,
+    name: '20260619_150224_add_paypal_gateway'
   },
 ];

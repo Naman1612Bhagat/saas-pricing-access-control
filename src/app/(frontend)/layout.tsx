@@ -25,7 +25,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     const authResult = await payload.auth({ headers })
     user = authResult.user
   } catch (e) {
-    // Suppress auth error if no token is found
   }
 
   async function handleLogout() {
@@ -39,12 +38,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="bg-[#0b0f19] text-[#f3f4f6] min-h-screen flex flex-col font-sans antialiased">
         <header className="sticky top-0 z-50 w-full border-b border-[#1f293d]/50 bg-[#0b0f19]/80 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            {/* Logo */}
             <Link href="/" className="flex items-center group">
               <AccessShieldLogo showText={true} iconSize={36} textClassName="text-lg sm:text-xl group-hover:text-indigo-400 transition-colors" />
             </Link>
 
-            {/* Desktop navigation links — hidden on mobile */}
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
               <Link href="/pricing" className="hover:text-indigo-400 transition-colors">
                 Pricing
@@ -61,7 +58,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               )}
             </nav>
 
-            {/* Right-side controls */}
             <div className="flex items-center gap-2 sm:gap-4">
               {user ? (
                 <div className="flex items-center gap-3 sm:gap-4">
@@ -70,7 +66,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                       <span className="text-sm font-bold text-white leading-tight">{user.name}</span>
                       <span className="text-[11px] text-slate-500 font-medium">{user.email}</span>
                     </div>
-                    {/* Circle Initials Avatar */}
                     <div className="w-8 h-8 rounded-full bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 font-bold text-xs flex items-center justify-center select-none">
                       {user.name ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
                     </div>
@@ -101,7 +96,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               )}
 
-              {/* Mobile hamburger — rendered client-side, hidden on md+ */}
               <MobileMenu
                 navLinks={[
                   { href: '/pricing', label: 'Pricing Plans' },

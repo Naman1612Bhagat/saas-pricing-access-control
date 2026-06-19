@@ -61,7 +61,7 @@ function getPlanSummary(planName: string): string {
 }
 
 export default function PricingClient({ plans, features, currentPlanId, currentPlanExpiryDate, isLoggedIn }: PricingClientProps) {
-    const [openFaq, setOpenFaq] = useState<number | null>(0) // First FAQ item open by default
+    const [openFaq, setOpenFaq] = useState<number | null>(0)
 
     const toggleFaq = (index: number) => {
         setOpenFaq(openFaq === index ? null : index)
@@ -94,9 +94,7 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
         <div className="bg-[#0b0f19] py-12 px-4 sm:px-6 lg:px-8 flex-grow">
             <div className="max-w-7xl mx-auto space-y-16">
                 
-                {/* 1. Header (Reduced Whitespace) */}
                 <div className="relative text-center max-w-3xl mx-auto py-8 overflow-hidden">
-                    {/* Radial Glow Effect */}
                     <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.15),transparent_60%)] blur-3xl pointer-events-none" />
                     <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight leading-none">
                         Simple, Transparent Plans
@@ -106,23 +104,18 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                     </p>
                 </div>
 
-                {/* 2. Credibility Section */}
                 <div className="flex flex-col items-center space-y-6">
-                    {/* Small Credibility Section */}
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-slate-500 py-1 text-[10px] uppercase font-bold tracking-widest">
                         <span>Trusted Payments Powered By</span>
                         <div className="flex flex-wrap items-center justify-center gap-3 text-slate-400">
-                            {/* Razorpay Badge */}
                             <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-[#121824] border border-slate-800/80 rounded-md">
                                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
                                 <span className="text-[10px] font-bold text-purple-300 normal-case">Razorpay</span>
                             </div>
-                            {/* Cashfree Badge */}
                             <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-[#121824] border border-slate-800/80 rounded-md">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                 <span className="text-[10px] font-bold text-emerald-300 normal-case">Cashfree</span>
                             </div>
-                            {/* SSL Secure Badge */}
                             <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-[#121824] border border-slate-800/80 rounded-md">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                 <span className="text-[10px] font-bold text-indigo-300 normal-case">SSL Secured</span>
@@ -131,7 +124,6 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                     </div>
                 </div>
 
-                {/* 3. Pricing Cards Grid */}
                 {plans.length === 0 ? (
                     <div className="text-center py-12 bg-[#121824]/50 border border-[#1f293d]/50 rounded-2xl max-w-md mx-auto">
                         <p className="text-slate-400">No active pricing plans found.</p>
@@ -156,7 +148,6 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                                     }`}
                                 >
                                     <div>
-                                        {/* Badges Container (Both badges side-by-side cleanly) */}
                                         <div className="mb-4">
                                             <div className="flex flex-wrap gap-2 items-center min-h-[22px]">
                                                 {isActiveUserPlan && (
@@ -191,7 +182,6 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                                             {getPlanSummary(plan.name)}
                                         </div>
 
-                                        {/* Prominent Pricing Typography */}
                                         <div className="my-6">
                                             <div className="flex items-baseline">
                                                 <span className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
@@ -253,7 +243,6 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                     </div>
                 )}
 
-                {/* 4. Trust & Benefits Section */}
                 <div className="max-w-6xl mx-auto py-4 border-y border-[#1f293d]/40">
                     <div className="grid grid-cols-2 md:grid-cols-6 gap-6 text-center">
                         {[
@@ -272,7 +261,6 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                     </div>
                 </div>
 
-                {/* 5. Plan Feature Comparison Matrix */}
                 {plans.length > 0 && (
                     <div className="max-w-4xl mx-auto mt-8 hidden sm:block">
                         <h3 className="text-xl font-bold text-white text-center mb-8">Compare Plan Features</h3>
@@ -336,21 +324,17 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                     </div>
                 )}
 
-                {/* 6. Payment Trust Badges */}
                 <div className="max-w-xl mx-auto flex flex-col items-center space-y-3 py-6">
                     <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Secure Payments Partnered With</p>
                     <div className="flex items-center space-x-6">
-                        {/* Razorpay Badge */}
                         <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#121824] border border-slate-800 rounded-lg">
                             <span className="w-2 h-2 rounded-full bg-purple-500"></span>
                             <span className="text-xs font-bold text-purple-300">Razorpay</span>
                         </div>
-                        {/* Cashfree Badge */}
                         <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#121824] border border-slate-800 rounded-lg">
                             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                             <span className="text-xs font-bold text-emerald-300">Cashfree</span>
                         </div>
-                        {/* SSL Secure Badge */}
                         <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#121824] border border-slate-800 rounded-lg">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                             <span className="text-xs font-bold text-indigo-300">SSL Secured</span>
@@ -358,7 +342,6 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                     </div>
                 </div>
 
-                {/* Support CTA Section */}
                 <div className="max-w-3xl mx-auto p-8 bg-gradient-to-r from-[#121824]/40 via-[#182035]/30 to-[#121824]/40 border border-[#1f293d]/50 rounded-2xl text-center space-y-3">
                     <h4 className="text-lg font-bold text-white">Still have questions?</h4>
                     <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
@@ -373,7 +356,6 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                     </a>
                 </div>
 
-                {/* 7. Collapsible FAQ Section */}
                 <div className="max-w-3xl mx-auto mt-12">
                     <h3 className="text-2xl font-bold text-white text-center mb-8">Frequently Asked Questions</h3>
                     <div className="space-y-4">

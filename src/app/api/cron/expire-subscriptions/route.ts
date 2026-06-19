@@ -11,7 +11,6 @@ export async function GET() {
 
         const now = new Date().toISOString()
 
-        // Find active subscriptions that are past their expiry date
         const subscriptions = await payload.find({
             collection: 'subscriptions',
             where: {
@@ -33,7 +32,6 @@ export async function GET() {
 
         const expiredCount = subscriptions.docs.length
 
-        // Update each to 'expired'
         for (const sub of subscriptions.docs) {
             await payload.update({
                 collection: 'subscriptions',

@@ -57,7 +57,6 @@ export async function registerUser(prevState: any, formData: FormData) {
         const payloadConfig = await config
         const payload = await getPayload({ config: payloadConfig })
 
-        // Create the user
         await payload.create({
             collection: 'users',
             data: {
@@ -68,7 +67,6 @@ export async function registerUser(prevState: any, formData: FormData) {
             },
         })
 
-        // Auto log-in
         const res = await fetch(`${SERVER_URL}/api/users/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -110,13 +108,11 @@ export async function subscribeToPlan(planId: string | number) {
         const payloadConfig = await config
         const payload = await getPayload({ config: payloadConfig })
 
-        // Get current user
         const { user } = await payload.auth({ headers })
         if (!user) {
             return { success: false, error: 'You must be logged in to subscribe.' }
         }
 
-        // Fetch selected plan
         const plan = await payload.findByID({
             collection: 'plans',
             id: planId,
@@ -126,7 +122,6 @@ export async function subscribeToPlan(planId: string | number) {
             return { success: false, error: 'Selected plan does not exist.' }
         }
 
-        // Cancel/expire any existing active subscriptions for this user
         const existingSubscriptions = await payload.find({
             collection: 'subscriptions',
             where: {
@@ -155,7 +150,6 @@ export async function subscribeToPlan(planId: string | number) {
             })
         }
 
-        // Create new subscription
         await payload.create({
             collection: 'subscriptions',
             data: {
@@ -216,7 +210,6 @@ export async function incrementReportUsageAction() {
         const payloadConfig = await config
         const payload = await getPayload({ config: payloadConfig })
 
-        // Get current user
         const { user } = await payload.auth({ headers })
         if (!user) {
             return { success: false, error: 'You must be logged in.' }

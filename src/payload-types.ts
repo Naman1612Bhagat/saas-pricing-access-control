@@ -244,7 +244,7 @@ export interface Payment {
   plan: number | Plan;
   amount: number;
   currency: string;
-  gateway: 'razorpay' | 'cashfree';
+  gateway: 'razorpay' | 'cashfree' | 'paypal';
   gatewayOrderId: string;
   gatewayPaymentId?: string | null;
   gatewaySignature?: string | null;
@@ -261,7 +261,7 @@ export interface Payment {
  */
 export interface PaymentGatewaySetting {
   id: number;
-  gateway: 'razorpay' | 'cashfree';
+  gateway: 'razorpay' | 'cashfree' | 'paypal';
   displayName: string;
   isEnabled: boolean;
   isTestMode: boolean;

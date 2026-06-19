@@ -14,20 +14,17 @@ export default async function ExportReportsPage() {
     const payloadConfig = await config
     const payload = await getPayload({ config: payloadConfig })
 
-    // 1. Authenticate user
     let user: any = null
     try {
         const authResult = await payload.auth({ headers })
         user = authResult.user
     } catch (e) {
-        // Not logged in
     }
 
     if (!user) {
         redirect('/login')
     }
 
-    // 2. Fetch user's active subscription (including plan depth=2)
     const subsResult = await payload.find({
         collection: 'subscriptions',
         where: {
@@ -50,7 +47,6 @@ export default async function ExportReportsPage() {
     const subscription = subsResult.docs[0] as any
     const isSubActive = isSubscriptionActive(subscription)
 
-    // 3. Fetch Export Reports Feature details
     const featuresResult = await payload.find({
         collection: 'features',
         where: {
@@ -71,16 +67,13 @@ export default async function ExportReportsPage() {
     })
     const exportReportsFeature = featuresResult.docs[0]
 
-    // 4. Verify access dynamically
     const hasAccess = await canAccessFeature({
         payload,
         userId: String(user.id),
         featureKey: 'export-reports',
     })
 
-    // 5. If allowed, render feature view
     if (hasAccess && exportReportsFeature) {
-        // Determine initial usage and limit info to pass down
         let limitType = 'disabled'
         let limitValue = null
         let currentUsage = 0
@@ -128,7 +121,6 @@ export default async function ExportReportsPage() {
         )
     }
 
-    // 6. Access Denied logic: determine the exact locking reason
     let lockReason = ''
     if (!subscription) {
         lockReason = 'No active subscription found. You must subscribe to a pricing plan to access this feature.'
@@ -152,7 +144,6 @@ export default async function ExportReportsPage() {
         if (!limit || limit.limitType === 'disabled') {
             lockReason = `Feature is not included in your current plan (${subscription.plan?.name}).`
         } else if (limit.limitType === 'limited') {
-            // Fetch usage counts
             const usagesResult = await payload.find({
                 collection: 'feature-usages',
                 where: {
@@ -176,7 +167,6 @@ export default async function ExportReportsPage() {
         }
     }
 
-    // 7. Find upgrade recommendations (cheapest active plan including this feature)
     const activePlansResult = await payload.find({
         collection: 'plans',
         where: {
@@ -203,14 +193,12 @@ export default async function ExportReportsPage() {
         return limit && limit.limitType !== 'disabled'
     })
 
-    // Sort by price ascending to find the cheapest upgrade
     eligiblePlans.sort((a: any, b: any) => a.price - b.price)
     const recommendedUpgradePlan = eligiblePlans[0]
 
     return (
         <div className="bg-[#0b0f19] py-20 px-4 sm:px-6 lg:px-8 flex-grow flex items-center justify-center">
             <div className="max-w-md w-full bg-[#161c2a]/80 backdrop-blur-md border border-[#232d42] p-8 rounded-3xl shadow-xl text-center space-y-6">
-                {/* Lock icon */}
                 <div className="w-16 h-16 bg-red-950/30 border border-red-500/20 rounded-full flex items-center justify-center text-3xl mx-auto">
                     🔒
                 </div>

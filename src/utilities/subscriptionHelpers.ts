@@ -8,12 +8,10 @@ export interface Subscription {
     plan: any
 }
 
-// Normalize feature keys to avoid dash vs underscore mismatches
 export function normalizeKey(key: string): string {
     return (key || '').replace(/-/g, '_').toLowerCase()
 }
 
-// Helper to determine if a subscription is currently active
 export function isSubscriptionActive(subscription: Subscription | null | undefined): boolean {
     if (!subscription) return false
     if (subscription.status !== 'active') return false
@@ -28,13 +26,11 @@ type HelperArgs = {
     featureKey: string
 }
 
-// Main access-control helper checking active subscription, expiry, feature availability, and limits
 export async function canAccessFeature({
     payload,
     userId,
     featureKey,
 }: HelperArgs): Promise<boolean> {
-    // 1. Fetch user's active subscription (status === 'active')
     const subscriptions = await payload.find({
         collection: 'subscriptions',
         where: {
@@ -57,7 +53,6 @@ export async function canAccessFeature({
 
     const subscription = subscriptions.docs[0] as unknown as Subscription
 
-    // 2. Verify subscription is active and not expired (avoid DB write during read)
     if (!isSubscriptionActive(subscription)) {
         return false
     }
@@ -65,7 +60,6 @@ export async function canAccessFeature({
     const plan = subscription.plan
     if (!plan) return false
 
-    // 3. Find the feature and limit type
     const featureLimits = plan.featureLimits || []
     const limit = featureLimits.find((item: any) => {
         const feat = typeof item.feature === 'object' ? item.feature : null
@@ -76,7 +70,6 @@ export async function canAccessFeature({
     if (limit.limitType === 'disabled') return false
     if (limit.limitType === 'unlimited') return true
 
-    // 4. For limited features, check usage count
     if (limit.limitType === 'limited') {
         const featureId = typeof limit.feature === 'object' ? limit.feature.id : limit.feature
 
@@ -106,13 +99,11 @@ export async function canAccessFeature({
     return false
 }
 
-// Helper to increment usage for limited features
 export async function incrementFeatureUsage({
     payload,
     userId,
     featureKey,
 }: HelperArgs): Promise<boolean> {
-    // 1. Fetch active subscription
     const subscriptions = await payload.find({
         collection: 'subscriptions',
         where: {
@@ -141,7 +132,6 @@ export async function incrementFeatureUsage({
     const plan = subscription.plan
     if (!plan) return false
 
-    // 2. Find feature limit and details
     const featureLimits = plan.featureLimits || []
     const limit = featureLimits.find((item: any) => {
         const feat = typeof item.feature === 'object' ? item.feature : null
@@ -150,11 +140,10 @@ export async function incrementFeatureUsage({
 
     if (!limit) return false
     if (limit.limitType === 'disabled') return false
-    if (limit.limitType === 'unlimited') return true // Unlimited features do not need usage tracking, return success
+    if (limit.limitType === 'unlimited') return true
 
     const featureId = typeof limit.feature === 'object' ? limit.feature.id : limit.feature
 
-    // 3. Query existing usage
     const usages = await payload.find({
         collection: 'feature-usages',
         where: {
@@ -177,7 +166,6 @@ export async function incrementFeatureUsage({
     const existingUsage = usages.docs[0]
 
     if (existingUsage) {
-        // Verify we aren't exceeding limit before incrementing
         if (existingUsage.count >= (limit.limitValue || 0)) {
             return false
         }

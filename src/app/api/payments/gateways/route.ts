@@ -6,7 +6,6 @@ export async function GET() {
     try {
         const payload = await getPayload({ config })
 
-        // Query enabled gateways from database sorted by sortOrder ascending
         const result = await payload.find({
             collection: 'payment-gateway-settings',
             where: {
@@ -18,7 +17,7 @@ export async function GET() {
             limit: 10,
         })
 
-        // Map to safe fields: gateway, displayName, description
+        // Only expose non-sensitive fields to the client.
         const enabledGateways = result.docs.map((doc: any) => ({
             gateway: doc.gateway,
             displayName: doc.displayName,

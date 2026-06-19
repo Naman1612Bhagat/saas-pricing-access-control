@@ -41,7 +41,6 @@ export default function ExportReportsClient({ userId, initialUsage, limitType, l
                 ...rows.map(r => r.join(','))
             ].join('\n')
         } else {
-            // Mock JSON format representing text report
             mimeType = 'application/json'
             fileExtension = 'json'
             fileContent = JSON.stringify({
@@ -73,7 +72,6 @@ export default function ExportReportsClient({ userId, initialUsage, limitType, l
         setIsExporting(true)
         setProgress(10)
 
-        // Simulated progress steps
         const interval = setInterval(() => {
             setProgress(prev => {
                 if (prev >= 80) {
@@ -85,7 +83,6 @@ export default function ExportReportsClient({ userId, initialUsage, limitType, l
         }, 150)
 
         try {
-            // Call the server action to verify and increment usage
             const res = await incrementReportUsageAction()
             
             clearInterval(interval)
@@ -94,7 +91,6 @@ export default function ExportReportsClient({ userId, initialUsage, limitType, l
                 setProgress(100)
                 setUsageCount(prev => prev + 1)
                 
-                // Trigger download
                 triggerDownload()
                 
                 setMessage({ text: 'Report exported successfully! Your download has started.', isError: false })
@@ -113,7 +109,6 @@ export default function ExportReportsClient({ userId, initialUsage, limitType, l
 
     return (
         <div className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 rounded-3xl p-6 sm:p-8 space-y-8 max-w-3xl mx-auto">
-            {/* Header info */}
             <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-[#1f293d]/50 pb-6 gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-white">Reports Engine</h2>
@@ -127,7 +122,6 @@ export default function ExportReportsClient({ userId, initialUsage, limitType, l
                 </div>
             </div>
 
-            {/* Notification messages */}
             {message && (
                 <div
                     className={`p-4 rounded-xl border text-sm text-center ${
@@ -140,7 +134,6 @@ export default function ExportReportsClient({ userId, initialUsage, limitType, l
                 </div>
             )}
 
-            {/* Configurator Forms */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div>
                     <label className="block text-sm font-semibold text-slate-300 mb-2">Report Type</label>
@@ -184,7 +177,6 @@ export default function ExportReportsClient({ userId, initialUsage, limitType, l
                 </div>
             </div>
 
-            {/* Export Trigger */}
             <div className="space-y-4">
                 <button
                     onClick={handleExport}
@@ -194,7 +186,6 @@ export default function ExportReportsClient({ userId, initialUsage, limitType, l
                     {isExporting ? 'Compiling Report Data...' : isLimitReached ? 'Usage Limit Reached' : 'Compile & Export Report'}
                 </button>
 
-                {/* Progress bar */}
                 {progress > 0 && (
                     <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
                         <div

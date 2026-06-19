@@ -24,7 +24,6 @@ export async function GET(req: Request) {
             return NextResponse.redirect(`${origin}/login`)
         }
 
-        // Find the payment record using gatewayOrderId
         const paymentsResult = await payload.find({
             collection: 'payments',
             where: {
@@ -54,7 +53,6 @@ export async function GET(req: Request) {
             return NextResponse.redirect(`${origin}/dashboard`)
         }
 
-        // Verify with Cashfree provider
         const paymentProvider = getPaymentProvider('cashfree')
         const verificationResult = await paymentProvider.verifyPayment({
             orderId,
@@ -77,7 +75,6 @@ export async function GET(req: Request) {
 
         const gatewayPaymentId = verificationResult.gatewayPaymentId || `cf_pay_${Date.now()}`
 
-        // Process successful payment
         await processSuccessfulPayment({
             payload,
             payment,
@@ -107,7 +104,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Order ID is required' }, { status: 400 })
         }
 
-        // Find the payment record using gatewayOrderId
         const paymentsResult = await payload.find({
             collection: 'payments',
             where: {

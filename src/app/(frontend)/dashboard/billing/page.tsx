@@ -10,7 +10,6 @@ import { IdDisplay } from './IdDisplay'
 
 export const dynamic = 'force-dynamic'
 
-/** Renders a styled badge for the payment gateway. */
 function renderGatewayBadge(gateway: string) {
     if (gateway === 'razorpay') {
         return (
@@ -26,6 +25,13 @@ function renderGatewayBadge(gateway: string) {
             </span>
         )
     }
+    if (gateway === 'paypal') {
+        return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                PayPal
+            </span>
+        )
+    }
     return (
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/10 border border-slate-500/20 text-slate-400">
             {gateway}
@@ -33,7 +39,6 @@ function renderGatewayBadge(gateway: string) {
     )
 }
 
-/** Returns the formatted invoice number for a payment. */
 function buildInvoiceNumber(payment: { id: number; createdAt: string }): string {
     const year = new Date(payment.createdAt).getFullYear()
     return `INV-${year}-${payment.id.toString().padStart(4, '0')}`
@@ -44,20 +49,17 @@ export default async function BillingHistoryPage() {
     const payloadConfig = await config
     const payload = await getPayload({ config: payloadConfig })
 
-    // 1. Authenticate user
     let user: any = null
     try {
         const authResult = await payload.auth({ headers })
         user = authResult.user
     } catch (e) {
-        // Not logged in
     }
 
     if (!user) {
         redirect('/login')
     }
 
-    // 2. Fetch user's payments (depth=1 to retrieve plan details, sorted by newest first)
     const paymentsResult = await payload.find({
         collection: 'payments',
         where: {
@@ -71,20 +73,19 @@ export default async function BillingHistoryPage() {
 
     const payments = paymentsResult.docs as any[]
 
-    // Helper to format currency values
     const formatPrice = (amount: number, currency: string) => {
         try {
-            return new Intl.NumberFormat('en-IN', {
+            const isUSD = (currency || '').toUpperCase() === 'USD'
+            return new Intl.NumberFormat(isUSD ? 'en-US' : 'en-IN', {
                 style: 'currency',
                 currency: currency || 'INR',
-                minimumFractionDigits: 0,
+                minimumFractionDigits: isUSD ? 2 : 0,
             }).format(amount)
         } catch {
             return `${currency} ${amount}`
         }
     }
 
-    // Helper to format date strings explicitly in Asia/Kolkata timezone
     const formatDate = (dateStr: string) => {
         try {
             const d = new Date(dateStr)
@@ -114,7 +115,6 @@ export default async function BillingHistoryPage() {
         }
     }
 
-    // Helper to render status badges with precise colors
     const renderStatusBadge = (status: Payment['status']) => {
         switch (status) {
             case 'paid':
@@ -145,7 +145,6 @@ export default async function BillingHistoryPage() {
     return (
         <div className="bg-[#0b0f19] py-12 px-4 sm:px-6 lg:px-8 flex-grow">
             <div className="max-w-5xl mx-auto space-y-8">
-                {/* Header navigation & title */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#1f293d]/50 pb-6">
                     <div>
                         <Link
@@ -160,7 +159,6 @@ export default async function BillingHistoryPage() {
                 </div>
 
                 {payments.length === 0 ? (
-                    /* Empty State: No Payment History */
                     <div className="bg-[#121824]/50 border border-[#1f293d]/50 p-12 rounded-3xl text-center space-y-6 max-w-xl mx-auto my-12">
                         <div className="w-16 h-16 bg-slate-800/40 rounded-full flex items-center justify-center text-2xl mx-auto">
                             🧾
@@ -180,7 +178,6 @@ export default async function BillingHistoryPage() {
                     </div>
                 ) : (
                     <>
-                        {/* Desktop & Tablet Table (Visible on sm screens and up) */}
                         <div className="hidden sm:block overflow-hidden bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 rounded-3xl">
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-[#1f293d]/50 text-left">
@@ -253,7 +250,6 @@ export default async function BillingHistoryPage() {
                             </div>
                         </div>
 
-                        {/* Mobile Cards View (Visible on extra-small screens below sm) */}
                         <div className="block sm:hidden space-y-4">
                             {payments.map((payment) => {
                                 const planName =
@@ -306,8 +302,7 @@ export default async function BillingHistoryPage() {
                                              )}
                                          </div>
 
-                                        {/* Invoice download — only for paid payments */}
-                                        {isPaid ? (
+                                         {isPaid ? (
                                             <InvoiceDownloadButton
                                                 paymentId={payment.id}
                                                 invoiceNumber={invoiceNumber}

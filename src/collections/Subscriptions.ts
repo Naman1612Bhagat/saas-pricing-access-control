@@ -26,80 +26,51 @@ export const Subscriptions: CollectionConfig = {
     hooks: {
         beforeChange: [
             async ({ data, req, operation }) => {
+                if (operation !== 'create') {
+                    return data
+                }
+
+                let planId: string | number | undefined = undefined
+                if (data.plan) {
+                    if (typeof data.plan === 'object' && data.plan !== null && 'id' in data.plan) {
+                        planId = (data.plan as { id: string | number }).id
+                    } else if (typeof data.plan === 'string' || typeof data.plan === 'number') {
+                        planId = data.plan
+                    }
+                }
+
+                if (!planId) {
+                    throw new Error('Plan is required to create a subscription.')
+                }
+
+                let plan: Plan | null = null
                 try {
-                    console.log('[Subscriptions Hook] beforeChange triggered.', {
-                        operation,
-                        data,
+                    plan = await req.payload.findByID({
+                        collection: 'plans',
+                        id: planId,
                     })
-
-                    if (operation !== 'create') {
-                        console.log('[Subscriptions Hook] Operation is not create. Skipping.')
-                        return data
-                    }
-
-                    // 1. Resolve Plan ID safely
-                    let planId: string | number | undefined = undefined
-                    if (data.plan) {
-                        if (typeof data.plan === 'object' && data.plan !== null && 'id' in data.plan) {
-                            planId = (data.plan as { id: string | number }).id
-                        } else if (typeof data.plan === 'string' || typeof data.plan === 'number') {
-                            planId = data.plan
-                        }
-                    }
-
-                    console.log('[Subscriptions Hook] Resolved planId:', planId)
-
-                    if (!planId) {
-                        console.error('[Subscriptions Hook] Error: Plan ID is missing in data.')
-                        throw new Error('Plan is required to create a subscription.')
-                    }
-
-                    // 2. Fetch Plan Document safely
-                    let plan: Plan | null = null
-                    try {
-                        plan = await req.payload.findByID({
-                            collection: 'plans',
-                            id: planId,
-                        })
-                    } catch (err) {
-                        const message = err instanceof Error ? err.message : String(err)
-                        console.error(`[Subscriptions Hook] Error fetching plan by ID ${planId}:`, message)
-                        throw new Error(`Plan with ID "${planId}" not found.`)
-                    }
-
-                    if (!plan) {
-                        console.error(`[Subscriptions Hook] Error: Plan with ID ${planId} resolved to null.`)
-                        throw new Error('Selected plan is invalid or does not exist.')
-                    }
-
-                    console.log('[Subscriptions Hook] Successfully fetched plan:', plan)
-
-                    // 3. Verify Validity Days
-                    const validityDays = typeof plan.validityDays === 'number' ? plan.validityDays : parseInt(String(plan.validityDays), 10)
-                    if (isNaN(validityDays)) {
-                        console.error('[Subscriptions Hook] Error: validityDays is not a valid number.', { validityDays: plan.validityDays })
-                        throw new Error('Selected plan has an invalid validity duration.')
-                    }
-
-                    // 4. Generate Dates
-                    const startDate = new Date()
-                    const expiryDate = new Date()
-                    expiryDate.setDate(startDate.getDate() + validityDays)
-
-                    const updatedData = {
-                        ...data,
-                        startDate: startDate.toISOString(),
-                        expiryDate: expiryDate.toISOString(),
-                        status: 'active',
-                    }
-
-                    console.log('[Subscriptions Hook] Successfully generated subscription data:', updatedData)
-                    return updatedData
-
                 } catch (err) {
-                    const message = err instanceof Error ? err.message : String(err)
-                    console.error('[Subscriptions Hook] Fatal Error in beforeChange hook:', message)
-                    throw err // Propagate error so user sees meaningful message
+                    throw new Error(`Plan with ID "${planId}" not found.`)
+                }
+
+                if (!plan) {
+                    throw new Error('Selected plan is invalid or does not exist.')
+                }
+
+                const validityDays = typeof plan.validityDays === 'number' ? plan.validityDays : parseInt(String(plan.validityDays), 10)
+                if (isNaN(validityDays)) {
+                    throw new Error('Selected plan has an invalid validity duration.')
+                }
+
+                const startDate = new Date()
+                const expiryDate = new Date()
+                expiryDate.setDate(startDate.getDate() + validityDays)
+
+                return {
+                    ...data,
+                    startDate: startDate.toISOString(),
+                    expiryDate: expiryDate.toISOString(),
+                    status: 'active',
                 }
             },
         ],

@@ -11,16 +11,13 @@ export default async function PricingPage() {
     const payloadConfig = await config
     const payload = await getPayload({ config: payloadConfig })
 
-    // 1. Get current logged in user
     let user: any = null
     try {
         const authResult = await payload.auth({ headers })
         user = authResult.user
     } catch (e) {
-        // Not logged in
     }
 
-    // 2. Fetch active plans
     const plansResult = await payload.find({
         collection: 'plans',
         where: {
@@ -31,17 +28,14 @@ export default async function PricingPage() {
         depth: 2,
     })
     
-    // Sort plans by price (cheapest first)
     const plans = [...plansResult.docs].sort((a: any, b: any) => Number(a.price) - Number(b.price))
 
-    // 3. Fetch all features
     const featuresResult = await payload.find({
         collection: 'features',
         limit: 50,
     })
     const features = featuresResult.docs
 
-    // 4. Fetch current user's active subscription (if any)
     let activeSubscription: any = null
     if (user) {
         const subs = await payload.find({

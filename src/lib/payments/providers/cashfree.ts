@@ -6,10 +6,6 @@ import type {
     VerifyPaymentResult,
 } from '../types'
 
-/**
- * Cashfree implementation of the PaymentProvider interface.
- * Uses native fetch to interact with the Cashfree Payment Gateway APIs.
- */
 export class CashfreeProvider implements PaymentProvider {
     private getCredentials() {
         const clientId = process.env.CASHFREE_CLIENT_ID
@@ -33,8 +29,7 @@ export class CashfreeProvider implements PaymentProvider {
     async createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
         const { clientId, clientSecret, baseUrl } = this.getCredentials()
 
-        // Generate a unique Cashfree order ID, e.g. cf_plan_1_user_2_1718721389238
-        // compliant with alphanumeric, underscores, hyphens, and max 45 chars.
+        // Unique Cashfree order ID (max 45 chars).
         const sanitizedReceipt = input.receipt.replace(/[^a-zA-Z0-9_-]/g, '_')
         const cfOrderId = `cf_${sanitizedReceipt}_${Date.now()}`.substring(0, 45)
 
@@ -53,7 +48,7 @@ export class CashfreeProvider implements PaymentProvider {
             },
         }
 
-        // Add return_url dynamically if provided in notes
+
         if (input.notes?.returnUrl) {
             body.order_meta = {
                 return_url: input.notes.returnUrl,
@@ -89,7 +84,7 @@ export class CashfreeProvider implements PaymentProvider {
     async verifyPayment(input: VerifyPaymentInput): Promise<VerifyPaymentResult> {
         const { clientId, clientSecret, baseUrl } = this.getCredentials()
 
-        // 1. Fetch order details to check the order status
+
         const orderResponse = await fetch(`${baseUrl}/orders/${input.orderId}`, {
             method: 'GET',
             headers: {
@@ -111,7 +106,7 @@ export class CashfreeProvider implements PaymentProvider {
             return { valid: false }
         }
 
-        // 2. Fetch payments for this order to retrieve the successful transaction ID (cf_payment_id)
+
         const paymentsResponse = await fetch(`${baseUrl}/orders/${input.orderId}/payments`, {
             method: 'GET',
             headers: {
@@ -145,9 +140,6 @@ export class CashfreeProvider implements PaymentProvider {
 
 let cashfreeProvider: CashfreeProvider | null = null
 
-/**
- * Returns the lazily-initialised singleton CashfreeProvider.
- */
 export function getCashfreeProvider(): CashfreeProvider {
     if (cashfreeProvider) {
         return cashfreeProvider

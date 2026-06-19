@@ -11,7 +11,7 @@ type Props = {
 }
 
 interface EnabledGateway {
-    gateway: 'razorpay' | 'cashfree'
+    gateway: 'razorpay' | 'cashfree' | 'paypal'
     displayName: string
     description?: string | null
 }
@@ -44,6 +44,66 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
     }, [])
     const [error, setError] = useState<string | null>(null)
     const [showGatewaySelection, setShowGatewaySelection] = useState(false)
+    const [payPalOrderId, setPayPalOrderId] = useState<string | null>(null)
+    const [showPayPalButtons, setShowPayPalButtons] = useState(false)
+
+    useEffect(() => {
+        if (showPayPalButtons && payPalOrderId && (window as any).paypal) {
+            const container = document.getElementById('paypal-button-container')
+            if (container) {
+                container.innerHTML = ''
+                ;(window as any).paypal.Buttons({
+                    createOrder: function(data: any, actions: any) {
+                        return payPalOrderId
+                    },
+                    onApprove: async function(data: any, actions: any) {
+                        setIsLoading(true)
+                        try {
+                            const res = await fetch('/api/payments/paypal/capture', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ orderId: payPalOrderId }),
+                            })
+                            const verifyData = await res.json()
+                            if (!res.ok) {
+                                setError(verifyData.error || 'PayPal payment capture failed.')
+                                return
+                            }
+                            router.refresh()
+                            router.push('/dashboard')
+                        } catch (err) {
+                            console.error('PayPal capture err:', err)
+                            setError('PayPal payment capture failed.')
+                        } finally {
+                            setIsLoading(false)
+                        }
+                    },
+                    onError: function(err: any) {
+                        console.error('PayPal Buttons onError:', err)
+                        setError('PayPal checkout encountered an error.')
+                        setShowPayPalButtons(false)
+                        setPayPalOrderId(null)
+                    },
+                    onCancel: function(data: any) {
+                        setError('Payment cancelled.')
+                        setShowPayPalButtons(false)
+                        setPayPalOrderId(null)
+                        fetch('/api/payments/cancel', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ orderId: payPalOrderId }),
+                        }).catch((err) => {
+                            console.error('Failed to report payment cancellation:', err)
+                        })
+                    }
+                }).render('#paypal-button-container')
+            }
+        }
+    }, [showPayPalButtons, payPalOrderId, router])
 
     const isCurrentPlan = currentPlanId && String(currentPlanId) === String(planId)
 
@@ -67,7 +127,7 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
         })
     }
 
-    const handleSubscribe = async (gateway: 'razorpay' | 'cashfree') => {
+    const handleSubscribe = async (gateway: 'razorpay' | 'cashfree' | 'paypal') => {
         if (!isLoggedIn) {
             router.push('/login')
             return
@@ -77,11 +137,53 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
         setIsLoading(true)
 
         try {
+            if (gateway === 'paypal') {
+                const orderRes = await fetch('/api/payments/create-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ planId, gateway }),
+                })
+
+                const orderData = await orderRes.json()
+
+                if (!orderRes.ok) {
+                    setError(orderData.error || 'Failed to create payment order.')
+                    setIsLoading(false)
+                    return
+                }
+
+                const loaded = await new Promise<boolean>((resolve) => {
+                    if ((window as any).paypal) {
+                        resolve(true)
+                        return
+                    }
+                    const script = document.createElement('script')
+                    script.src = `https://www.paypal.com/sdk/js?client-id=${orderData.paypalClientId}&currency=USD`
+                    script.onload = () => resolve(true)
+                    script.onerror = () => resolve(false)
+                    document.body.appendChild(script)
+                })
+
+                if (!loaded) {
+                    setError('Failed to load PayPal SDK. Please try again.')
+                    setIsLoading(false)
+                    return
+                }
+
+                setPayPalOrderId(orderData.orderId)
+                setShowPayPalButtons(true)
+                setIsLoading(false)
+                return
+            }
+
             if (gateway === 'cashfree') {
                 const loaded = await loadCashfreeScript()
 
                 if (!loaded) {
                     setError('Failed to load Cashfree. Please try again.')
+                    setIsLoading(false)
                     return
                 }
 
@@ -245,6 +347,32 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
         )
     }
 
+    if (showPayPalButtons) {
+        return (
+            <div className="w-full bg-[#111827]/60 border border-slate-700/40 p-4 rounded-xl space-y-4 text-left">
+                <p className="text-xs font-semibold text-slate-300 text-center uppercase tracking-wider">Pay with PayPal</p>
+                {error && (
+                    <p className="text-red-400 text-xs text-center">{error}</p>
+                )}
+                {isLoading && (
+                    <p className="text-slate-400 text-xs text-center">Processing capture...</p>
+                )}
+                <div id="paypal-button-container" className="w-full min-h-[150px]"></div>
+                <button
+                    onClick={() => {
+                        setShowPayPalButtons(false)
+                        setPayPalOrderId(null)
+                        setError(null)
+                    }}
+                    disabled={isLoading}
+                    className="w-full text-xs text-slate-400 hover:text-slate-200 text-center font-medium mt-2 transition-colors cursor-pointer"
+                >
+                    Back to payment methods
+                </button>
+            </div>
+        )
+    }
+
     if (showGatewaySelection) {
         return (
             <div className="w-full bg-[#111827]/60 border border-slate-700/40 p-4 rounded-xl space-y-3 text-left">
@@ -257,13 +385,18 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
                 <div className="space-y-2">
                     {enabledGateways.map((g) => {
                         const isRazorpay = g.gateway === 'razorpay'
+                        const isPayPal = g.gateway === 'paypal'
                         const themeClasses = isRazorpay
                             ? "bg-indigo-600/15 hover:bg-indigo-600/25 border border-indigo-500/30 text-indigo-200"
+                            : isPayPal
+                            ? "bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 text-blue-200"
                             : "bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-200"
                         const badgeClasses = isRazorpay
                             ? "text-indigo-400 bg-indigo-500/10"
+                            : isPayPal
+                            ? "text-blue-400 bg-blue-500/10"
                             : "text-emerald-400 bg-emerald-500/10"
-                        const badgeText = isRazorpay ? "Popular" : "Available"
+                        const badgeText = isRazorpay ? "Popular" : isPayPal ? "International" : "Available"
 
                         return (
                             <button

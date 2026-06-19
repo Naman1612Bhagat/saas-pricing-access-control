@@ -18,12 +18,7 @@ export interface ProcessSuccessfulPaymentResult {
     alreadyProcessed: boolean
 }
 
-// ─── Helper: expire active subscriptions ────────────────────────────────────
 
-/**
- * Marks all currently-active subscriptions for the given user as 'expired'.
- * Errors bubble up so the caller's transaction can roll back.
- */
 export async function expireActiveSubscriptions(
     payload: Payload,
     userId: number,
@@ -52,14 +47,7 @@ export async function expireActiveSubscriptions(
     }
 }
 
-// ─── Helper: create subscription ─────────────────────────────────────────────
 
-/**
- * Creates a new subscription record.
- * The Subscriptions collection beforeChange hook computes startDate,
- * expiryDate, and status automatically — behaviour is preserved unchanged.
- * Errors bubble up so the caller's transaction can roll back.
- */
 export async function createSubscription(
     payload: Payload,
     userId: number,
@@ -80,43 +68,16 @@ export async function createSubscription(
     })
 }
 
-// ─── Core: process successful payment ────────────────────────────────────────
-
-/**
- * Atomically claims a payment and activates the user's subscription.
- *
- * ── Race-condition safety ────────────────────────────────────────────────────
- * Both the /verify route and the Razorpay webhook may invoke this function for
- * the same payment within milliseconds of each other. The previous
- * application-level `if (payment.status === 'paid') return` check is a
- * read-then-write (TOCTOU) pattern: two callers can both read 'created',
- * both pass the check, and both create a subscription.
- *
- * The fix is an atomic conditional UPDATE:
- *
- *   UPDATE payments
- *   SET    status = 'paid', razorpay_payment_id = $1 [, razorpay_signature = $2]
- *   WHERE  id = $n AND status = 'created'
- *
- * PostgreSQL guarantees that exactly ONE concurrent writer receives rowCount = 1.
- * Every other concurrent writer receives rowCount = 0 and returns immediately.
- * This is a database-level compare-and-swap and is immune to race conditions.
- *
- * ── Transaction scope ────────────────────────────────────────────────────────
- * The payment claim (step 1) is intentionally executed outside the Payload
- * transaction because the atomic UPDATE IS the concurrency guard. The
- * subscription operations (step 2) are wrapped in a Payload transaction so that
- * expiring old subscriptions and creating the new one are committed atomically.
- * ─────────────────────────────────────────────────────────────────────────────
- */
+// Compare-and-swap concurrency guard.
+// PostgreSQL guarantees only one concurrent updater receives rowCount = 1.
+// Other callers will receive rowCount = 0 and exit.
 export async function processSuccessfulPayment({
     payload,
     payment,
     gatewayPaymentId,
     gatewaySignature,
 }: ProcessSuccessfulPaymentInput): Promise<ProcessSuccessfulPaymentResult> {
-    // ── Pre-claim Idempotency check ──────────────────────────────────────────
-    // If the payment object passed is already marked 'paid', we can skip entirely.
+    // Prevent duplicate subscription activation if a gateway retries callbacks.
     if (payment.status === 'paid') {
         payload.logger.info(
             `[Subscription Service] Payment ${payment.id} is already marked as paid. Skipping activation.`,
@@ -124,8 +85,7 @@ export async function processSuccessfulPayment({
         return { success: true, alreadyProcessed: true }
     }
 
-    // Double check database status directly, in case it was updated by another process
-    // after the local payment object was retrieved but before we hit the atomic query.
+    // Double check DB status in case of concurrency between retrieval and update.
     const freshPayment = await payload.findByID({
         collection: 'payments',
         id: payment.id,
@@ -138,12 +98,9 @@ export async function processSuccessfulPayment({
         return { success: true, alreadyProcessed: true }
     }
 
-    // ── Step 1: Atomic claim ────────────────────────────────────────────────
-    // Build the conditional UPDATE using drizzle's sql`` tagged template so
-    // parameters are safely bound. The WHERE clause `status = 'created'` is the
-    // compare-and-swap. Only one concurrent caller will succeed.
+    // Atomic update as a compare-and-swap. Only one concurrent caller will succeed.
     let claimQuery
-    if (payment.gateway === 'cashfree') {
+    if (payment.gateway === 'cashfree' || payment.gateway === 'paypal') {
         claimQuery = sql`UPDATE payments
              SET    status = 'paid',
                     gateway_payment_id = ${gatewayPaymentId}
@@ -181,7 +138,7 @@ export async function processSuccessfulPayment({
         return { success: true, alreadyProcessed: true }
     }
 
-    // ── Step 2: Activate subscription (in a Payload transaction) ───────────
+    // Activate the new subscription within a database transaction.
     // We won the atomic claim. Now expire old subscriptions and create the new
     // one. Both operations are wrapped in a transaction so they succeed or fail
     // together. If this block throws, the payment remains 'paid' (the claim

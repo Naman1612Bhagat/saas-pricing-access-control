@@ -8,12 +8,6 @@ import type {
     VerifyPaymentResult,
 } from '../types'
 
-/**
- * Razorpay implementation of the PaymentProvider interface.
- *
- * All Razorpay SDK usage is isolated here. No other file in the codebase
- * imports from the 'razorpay' package directly.
- */
 export class RazorpayProvider implements PaymentProvider {
     private client: Razorpay
 
@@ -21,10 +15,6 @@ export class RazorpayProvider implements PaymentProvider {
         this.client = client
     }
 
-    /**
-     * Creates a Razorpay order.
-     * Converts rupees → paise (Razorpay expects smallest currency unit).
-     */
     async createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
         const order = await this.client.orders.create({
             amount: input.amountInRupees * 100, // paise
@@ -40,10 +30,6 @@ export class RazorpayProvider implements PaymentProvider {
         }
     }
 
-    /**
-     * Verifies the Razorpay HMAC-SHA256 webhook/checkout signature.
-     * The signature is constructed as: HMAC(orderId + "|" + paymentId, keySecret)
-     */
     async verifyPayment(input: VerifyPaymentInput): Promise<VerifyPaymentResult> {
         const keySecret = process.env.RAZORPAY_KEY_SECRET
         if (!keySecret) {
@@ -60,15 +46,8 @@ export class RazorpayProvider implements PaymentProvider {
     }
 }
 
-// ─── Singleton factory ────────────────────────────────────────────────────────
-
 let razorpayProvider: RazorpayProvider | null = null
 
-/**
- * Returns a lazily-initialised singleton RazorpayProvider.
- * Credentials are read at call-time (not import-time) so the module
- * is safe to import during Next.js/Vercel build when env vars are absent.
- */
 export function getRazorpayProvider(): RazorpayProvider {
     if (razorpayProvider) {
         return razorpayProvider

@@ -27,20 +27,17 @@ export default async function DashboardPage() {
     const payloadConfig = await config
     const payload = await getPayload({ config: payloadConfig })
 
-    // 1. Authenticate user
     let user: any = null
     try {
         const authResult = await payload.auth({ headers })
         user = authResult.user
     } catch (e) {
-        // Not logged in
     }
 
     if (!user) {
         redirect('/login')
     }
 
-    // 2. Fetch user's active subscription (including plan depth=2)
     const subsResult = await payload.find({
         collection: 'subscriptions',
         where: {
@@ -63,7 +60,6 @@ export default async function DashboardPage() {
     const subscription = subsResult.docs[0] as any
     const isSubActive = isSubscriptionActive(subscription)
 
-    // 3. Process subscription plan feature limits and fetch usage dynamically
     const displayFeatures: any[] = []
     let reportsUsed = 0
 
@@ -80,10 +76,8 @@ export default async function DashboardPage() {
             const limitType = limit.limitType
             const limitValue = limit.limitValue
             
-            // Skip disabled features if they don't belong to the active plan
             if (limitType === 'disabled') continue
 
-            // Fetch usage count for this specific feature
             const usagesResult = await payload.find({
                 collection: 'feature-usages',
                 where: {
@@ -104,12 +98,10 @@ export default async function DashboardPage() {
             })
             const usageCount = usagesResult.docs[0]?.count || 0
 
-            // If this is the reports feature, update reports metrics
             if (normKey === 'export_reports') {
                 reportsUsed = usageCount
             }
 
-            // Determine feature status and button configuration
             let isEnabled = false
             let statusBadge = ''
             let lockReasonText = ''
@@ -137,7 +129,6 @@ export default async function DashboardPage() {
                 isEnabled = true
                 statusBadge = 'Enabled'
                 
-                // Map actions based on key
                 if (normKey === 'export_reports') {
                     buttonText = 'Export'
                     buttonHref = '/features/export-reports'
@@ -154,7 +145,6 @@ export default async function DashboardPage() {
                 }
             }
 
-            // Feature descriptions
             let description = feat.description || ''
             if (!description) {
                 if (normKey === 'export_reports') {
@@ -168,7 +158,6 @@ export default async function DashboardPage() {
                 }
             }
 
-            // Feature icons
             let iconName = 'Sparkles'
             if (normKey === 'export_reports') {
                 iconName = 'FileDown'
@@ -198,7 +187,6 @@ export default async function DashboardPage() {
         }
     }
 
-    // 5. Query user's payments directly to compute total dynamic amount spent (paid)
     const paymentsResult = await payload.find({
         collection: 'payments',
         where: {
@@ -219,7 +207,6 @@ export default async function DashboardPage() {
     })
     const totalSpent = paymentsResult.docs.reduce((acc, curr: any) => acc + (curr.amount || 0), 0)
 
-    // Helpers for display calculations
     let daysRemaining = 0
     let formattedStart = ''
     let formattedExpiry = ''
@@ -365,10 +352,8 @@ export default async function DashboardPage() {
                 {/* Main Dashboard Workspace Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     
-                    {/* Left Column (Main Panels: Subscription details & Usage metrics) */}
                     <div className="md:col-span-2 space-y-8">
                         {!subscription ? (
-                            /* Redesigned Empty State Banner */
                             <div className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 p-10 rounded-3xl text-center space-y-6">
                                 <div className="w-14 h-14 bg-slate-800/40 border border-slate-700/30 rounded-2xl flex items-center justify-center text-xl mx-auto shadow-inner">
                                     💳
@@ -388,7 +373,6 @@ export default async function DashboardPage() {
                             </div>
                         ) : (
                             <>
-                                {/* SECTION 3: Active Subscription Details Card */}
                                 <div className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 p-6 sm:p-8 rounded-3xl space-y-6 shadow-sm">
                                     <div className="flex items-center justify-between border-b border-[#1f293d]/40 pb-4">
                                         <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -421,7 +405,6 @@ export default async function DashboardPage() {
                                         </div>
                                     </div>
 
-                                    {/* Subscription Progress Bar */}
                                     <div className="space-y-2 pt-2">
                                         <div className="flex items-center justify-between text-[11px] font-semibold">
                                             <span className="text-indigo-400 font-bold">{daysRemaining} Days Remaining</span>
@@ -441,7 +424,6 @@ export default async function DashboardPage() {
                                     </div>
                                 </div>
 
-                                {/* SECTION 4: Feature Usage allowances */}
                                 <div className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 p-6 sm:p-8 rounded-3xl space-y-6 shadow-sm">
                                     <div className="border-b border-[#1f293d]/40 pb-4">
                                         <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -495,7 +477,6 @@ export default async function DashboardPage() {
                                                             </span>
                                                         </div>
 
-                                                        {/* Feature limit progress indicator */}
                                                         {feat.limitType !== 'disabled' && (
                                                             <div className="w-full bg-[#1f293d]/30 h-1.5 rounded-full overflow-hidden border border-[#2d3a54]/10">
                                                                 <div 
@@ -537,17 +518,13 @@ export default async function DashboardPage() {
                         )}
                     </div>
 
-                    {/* Right Column (Side deck: Quick actions & Client simulator widgets) */}
                     <div className="md:col-span-1 space-y-8">
-                        
-                        {/* SECTION 5: Quick Actions Card Deck */}
                         <div className="space-y-4">
                             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
                                 Quick Actions
                             </h3>
                             
                             <div className="space-y-3">
-                                {/* Action 1: Billing History */}
                                 <Link 
                                     href="/dashboard/billing" 
                                     className="group p-4 bg-[#121824]/50 border border-[#1f293d]/50 hover:border-indigo-500/40 hover:bg-[#121824] rounded-2xl transition-all duration-300 flex items-start gap-3.5 cursor-pointer shadow-sm"
@@ -564,7 +541,6 @@ export default async function DashboardPage() {
                                     </div>
                                 </Link>
 
-                                {/* Action 2: Premium Reports */}
                                 <Link 
                                     href="/features/export-reports" 
                                     className="group p-4 bg-[#121824]/50 border border-[#1f293d]/50 hover:border-indigo-500/40 hover:bg-[#121824] rounded-2xl transition-all duration-300 flex items-start gap-3.5 cursor-pointer shadow-sm"
@@ -581,7 +557,6 @@ export default async function DashboardPage() {
                                     </div>
                                 </Link>
 
-                                {/* Action 3: Upgrade Plan */}
                                 <Link 
                                     href="/pricing" 
                                     className="group p-4 bg-[#121824]/50 border border-[#1f293d]/50 hover:border-indigo-500/40 hover:bg-[#121824] rounded-2xl transition-all duration-300 flex items-start gap-3.5 cursor-pointer shadow-sm"
@@ -600,12 +575,10 @@ export default async function DashboardPage() {
                             </div>
                         </div>
 
-                        {/* SECTION 6: Tools client widget */}
                         <div className="space-y-4">
                             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
                                 Interactive Simulation
                             </h3>
-                            {/* If subscription is missing, we pass user.id to test tool, or fallback. The DashboardClient handles this. */}
                             <DashboardClient subscriptionId={subscription?.id || 'no_active_sub'} />
                         </div>
                     </div>

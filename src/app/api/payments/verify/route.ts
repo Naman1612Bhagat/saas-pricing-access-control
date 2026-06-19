@@ -4,11 +4,6 @@ import { getPaymentProvider } from '@/lib/payments/paymentService'
 import { processSuccessfulPayment } from '@/lib/subscriptions/subscriptionService'
 import config from '@payload-config'
 
-/**
- * Handles verification of Razorpay payment signatures.
- * On success, updates the payment record to 'paid' and creates a new active subscription.
- * Any previous active subscription for the user is marked as 'expired'.
- */
 export async function POST(req: Request) {
     try {
         const payload = await getPayload({ config })
@@ -36,7 +31,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing payment details' }, { status: 400 })
         }
 
-        // 1. Signature Verification
         let isValid = false
         try {
             const paymentProvider = getPaymentProvider()
@@ -54,7 +48,6 @@ export async function POST(req: Request) {
         if (!isValid) {
             console.warn(`Signature verification failed for order ${razorpay_order_id}`)
             
-            // Mark payment as failed if we can find it
             try {
                 const paymentResult = await payload.find({
                     collection: 'payments',
@@ -84,7 +77,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 })
         }
 
-        // 3. Retrieve local Payment record
         const paymentResult = await payload.find({
             collection: 'payments',
             where: {
@@ -102,7 +94,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Payment record not found' }, { status: 404 })
         }
 
-        // Prevent double processing if already marked as paid
         if (payment.status === 'paid') {
             return NextResponse.json({
                 success: true,
@@ -110,7 +101,6 @@ export async function POST(req: Request) {
             })
         }
 
-        // 4. Process payment and activate subscription using the unified service
         try {
             const result = await processSuccessfulPayment({
                 payload,

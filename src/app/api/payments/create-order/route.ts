@@ -3,10 +3,6 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getPaymentProvider } from '@/lib/payments/paymentService'
 
-/**
- * Handles creation of Razorpay payment orders.
- * Creates an order in Razorpay and records a matching transaction in the 'payments' collection.
- */
 export async function POST(req: Request) {
     try {
         const payload = await getPayload({ config })
@@ -34,11 +30,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Payment gateway is required' }, { status: 400 })
         }
 
-        if (gateway !== 'razorpay' && gateway !== 'cashfree') {
+        if (gateway !== 'razorpay' && gateway !== 'cashfree' && gateway !== 'paypal') {
             return NextResponse.json({ error: 'Unsupported payment gateway' }, { status: 400 })
         }
 
-        // Verify if payment gateway is enabled
         const gatewaySettings = await payload.find({
             collection: 'payment-gateway-settings',
             where: {
@@ -53,7 +48,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Selected payment gateway is disabled or unavailable' }, { status: 400 })
         }
 
-        // 1. Fetch Plan Document
         let plan
         try {
             plan = await payload.findByID({
@@ -69,7 +63,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Selected plan not found' }, { status: 404 })
         }
 
-        // 2. Validate Price
         const amountInRupees = Number(plan.price)
         if (isNaN(amountInRupees) || amountInRupees <= 0) {
             return NextResponse.json({ error: 'Invalid plan price' }, { status: 400 })
@@ -80,7 +73,6 @@ export async function POST(req: Request) {
         const origin = `${protocol}://${host}`
         const returnUrl = `${origin}/api/payments/cashfree/verify?order_id={order_id}`
 
-        // 3. Create Gateway Order
         let orderResult
         try {
             const paymentProvider = getPaymentProvider(gateway)
@@ -91,6 +83,7 @@ export async function POST(req: Request) {
                 notes: {
                     userId: String(user.id),
                     planId: String(planId),
+                    planName: plan.name,
                     returnUrl,
                 },
                 customerDetails: {
@@ -104,15 +97,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Failed to create order with payment gateway' }, { status: 502 })
         }
 
-        // 4. Create Local Payment Record
+        // PayPal sandbox uses fixed USD demo prices. Replace with real pricing/conversion logic before production.
         try {
             await payload.create({
                 collection: 'payments',
                 data: {
                     user: user.id,
                     plan: planId,
-                    amount: amountInRupees,
-                    currency: 'INR',
+                    amount: gateway === 'paypal' ? orderResult.amount / 100 : amountInRupees,
+                    currency: gateway === 'paypal' ? 'USD' : 'INR',
                     gateway: gateway,
                     gatewayOrderId: orderResult.gatewayOrderId,
                     // Store in razorpayOrderId only if gateway is razorpay for backward compatibility
@@ -142,6 +135,8 @@ export async function POST(req: Request) {
             planName: plan.name,
             paymentSessionId: orderResult.paymentSessionId,
             mode: process.env.CASHFREE_ENV || 'sandbox',
+            paypalClientId: process.env.PAYPAL_CLIENT_ID,
+            paypalMode: process.env.PAYPAL_ENV || 'sandbox',
         })
     } catch (error) {
         console.error('Create Razorpay order error:', error)

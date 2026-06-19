@@ -21,6 +21,7 @@ export const PaymentGatewaySettings: CollectionConfig = {
             options: [
                 { label: 'Razorpay', value: 'razorpay' },
                 { label: 'Cashfree', value: 'cashfree' },
+                { label: 'PayPal', value: 'paypal' },
             ],
             required: true,
             unique: true,

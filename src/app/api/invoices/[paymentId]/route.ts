@@ -2,17 +2,6 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
-/**
- * GET /api/invoices/[paymentId]
- *
- * Returns payment data required to generate an invoice PDF.
- *
- * Access control:
- *  - User must be authenticated.
- *  - Regular user may only access their own payment records.
- *  - Admin users may access any payment record.
- *  - Only payments with status "paid" are eligible for invoice generation.
- */
 export async function GET(
     req: Request,
     { params }: { params: Promise<{ paymentId: string }> },
@@ -21,19 +10,16 @@ export async function GET(
         const { paymentId } = await params
         const payload = await getPayload({ config })
 
-        // 1. Authenticate request
         const { user } = await payload.auth({ headers: req.headers })
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized — please log in first' }, { status: 401 })
         }
 
-        // 2. Validate paymentId param
         const paymentIdNum = parseInt(paymentId, 10)
         if (isNaN(paymentIdNum) || paymentIdNum <= 0) {
             return NextResponse.json({ error: 'Invalid payment ID' }, { status: 400 })
         }
 
-        // 3. Fetch payment record (depth=1 resolves plan and user relations)
         let payment: any
         try {
             payment = await payload.findByID({
@@ -49,7 +35,7 @@ export async function GET(
             return NextResponse.json({ error: 'Payment not found' }, { status: 404 })
         }
 
-        // 4. Ownership / role check
+        // Security check: only allow admins or the payment owner to view the invoice.
         const paymentUserId =
             typeof payment.user === 'object' && payment.user !== null
                 ? payment.user.id
@@ -65,7 +51,6 @@ export async function GET(
             )
         }
 
-        // 5. Status guard — invoices are only valid for paid payments
         if (payment.status !== 'paid') {
             return NextResponse.json(
                 { error: 'Invoice is only available for payments with status "paid"' },
@@ -73,7 +58,7 @@ export async function GET(
             )
         }
 
-        // 6. Return sanitised payment data (omit sensitive signature)
+        // Omit gatewaySignature from payload response for security.
         const invoiceData = {
             id: payment.id,
             status: payment.status,

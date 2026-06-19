@@ -13,7 +13,6 @@ describe('Payment & Subscription Integration', () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })
 
-    // Find or create an admin user
     const users = await payload.find({
       collection: 'users',
       limit: 1,
@@ -32,7 +31,6 @@ describe('Payment & Subscription Integration', () => {
       }) as User
     }
 
-    // Find or create a plan
     const plans = await payload.find({
       collection: 'plans',
       limit: 1,
@@ -54,7 +52,6 @@ describe('Payment & Subscription Integration', () => {
   })
 
   it('claims payment atomically and prevents duplicate subscription creation', async () => {
-    // 1. Create a fresh payment in status 'created'
     const testOrderId = 'order_test_' + Date.now()
     const payment = await payload.create({
       collection: 'payments',
@@ -70,10 +67,8 @@ describe('Payment & Subscription Integration', () => {
       },
     }) as Payment
 
-    // Verify it is created
     expect(payment.status).toBe('created')
 
-    // 2. Call processSuccessfulPayment concurrently (simulate verify and webhook race)
     const promise1 = processSuccessfulPayment({
       payload,
       payment,
@@ -88,27 +83,21 @@ describe('Payment & Subscription Integration', () => {
       gatewaySignature: 'sig_test_2',
     })
 
-    // Execute concurrently
     const results = await Promise.allSettled([promise1, promise2])
 
-    // Print details of executions
-    console.log('Concurrent processing results:', results)
 
-    // Check if both succeeded (no errors thrown)
+
     expect(results[0].status).toBe('fulfilled')
     expect(results[1].status).toBe('fulfilled')
 
-    // 3. Query the payment status from database
     const dbPayment = await payload.findByID({
       collection: 'payments',
       id: payment.id,
     })
 
     expect(dbPayment.status).toBe('paid')
-    // One of them must have set the gateway payment id
     expect(['pay_test_1', 'pay_test_2']).toContain(dbPayment.gatewayPaymentId)
 
-    // 4. Verify that exactly ONE subscription was created for the user
     const subscriptions = await payload.find({
       collection: 'subscriptions',
       where: {
@@ -116,7 +105,6 @@ describe('Payment & Subscription Integration', () => {
       },
     })
 
-    // Clean up created subscriptions for the user
     for (const sub of subscriptions.docs) {
       await payload.delete({
         collection: 'feature-usages',
@@ -130,7 +118,6 @@ describe('Payment & Subscription Integration', () => {
       })
     }
 
-    // Clean up created payment
     await payload.delete({
       collection: 'payments',
       id: payment.id,
