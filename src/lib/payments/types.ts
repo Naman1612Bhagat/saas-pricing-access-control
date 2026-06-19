@@ -13,6 +13,12 @@ export interface CreateOrderInput {
     receipt: string
     /** Arbitrary key-value metadata to attach to the order */
     notes?: Record<string, string>
+    customerDetails?: {
+        id: string
+        email: string
+        name?: string
+        phone?: string
+    }
 }
 
 export interface VerifyPaymentInput {
@@ -32,11 +38,13 @@ export interface CreateOrderResult {
     /** Amount in the smallest currency unit (paise for INR) */
     amount: number
     currency: string
+    paymentSessionId?: string  // Cashfree only
 }
 
 export interface VerifyPaymentResult {
     /** true if the signature is valid */
     valid: boolean
+    gatewayPaymentId?: string
 }
 
 // ─── Provider interface ───────────────────────────────────────────────────────

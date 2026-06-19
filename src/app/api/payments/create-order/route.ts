@@ -60,6 +60,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid plan price' }, { status: 400 })
         }
 
+        const host = req.headers.get('host')
+        const protocol = req.headers.get('x-forwarded-proto') || 'http'
+        const origin = `${protocol}://${host}`
+        const returnUrl = `${origin}/api/payments/cashfree/verify?order_id={order_id}`
+
         // 3. Create Gateway Order
         let orderResult
         try {
@@ -71,6 +76,12 @@ export async function POST(req: Request) {
                 notes: {
                     userId: String(user.id),
                     planId: String(planId),
+                    returnUrl,
+                },
+                customerDetails: {
+                    id: String(user.id),
+                    email: user.email,
+                    name: user.name || undefined,
                 },
             })
         } catch (err) {
@@ -88,7 +99,9 @@ export async function POST(req: Request) {
                     amount: amountInRupees,
                     currency: 'INR',
                     gateway: gateway,
-                    razorpayOrderId: orderResult.gatewayOrderId,
+                    gatewayOrderId: orderResult.gatewayOrderId,
+                    // Store in razorpayOrderId only if gateway is razorpay for backward compatibility
+                    ...(gateway === 'razorpay' ? { razorpayOrderId: orderResult.gatewayOrderId } : {}),
                     status: 'created',
                 },
             })
@@ -112,6 +125,8 @@ export async function POST(req: Request) {
             currency: orderResult.currency,
             keyId,
             planName: plan.name,
+            paymentSessionId: orderResult.paymentSessionId,
+            mode: process.env.CASHFREE_ENV || 'sandbox',
         })
     } catch (error) {
         console.error('Create Razorpay order error:', error)

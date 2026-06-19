@@ -7,9 +7,10 @@ type Props = {
     planId: string | number
     isLoggedIn: boolean
     currentPlanId?: string | number | null
+    ctaText?: string
 }
 
-export default function SubscribeButton({ planId, isLoggedIn, currentPlanId }: Props) {
+export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, ctaText }: Props) {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -27,6 +28,16 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId }: P
         })
     }
 
+    const loadCashfreeScript = () => {
+        return new Promise<boolean>((resolve) => {
+            const script = document.createElement('script')
+            script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js'
+            script.onload = () => resolve(true)
+            script.onerror = () => resolve(false)
+            document.body.appendChild(script)
+        })
+    }
+
     const handleSubscribe = async (gateway: 'razorpay' | 'cashfree') => {
         if (!isLoggedIn) {
             router.push('/login')
@@ -38,7 +49,70 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId }: P
 
         try {
             if (gateway === 'cashfree') {
-                throw new Error('Cashfree payment is not supported yet.')
+                const loaded = await loadCashfreeScript()
+
+                if (!loaded) {
+                    setError('Failed to load Cashfree. Please try again.')
+                    return
+                }
+
+                const orderRes = await fetch('/api/payments/create-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ planId, gateway }),
+                })
+
+                const orderData = await orderRes.json()
+
+                if (!orderRes.ok) {
+                    setError(orderData.error || 'Failed to create payment order.')
+                    return
+                }
+
+                try {
+                    const cashfree = new (window as any).Cashfree({
+                        mode: orderData.mode === 'production' ? 'production' : 'sandbox',
+                    })
+
+                    await cashfree.checkout({
+                        paymentSessionId: orderData.paymentSessionId,
+                        redirectTarget: '_modal',
+                    })
+                } catch (checkoutErr) {
+                    console.error('Cashfree checkout modal error:', checkoutErr)
+                    setError('Payment cancelled.')
+                    fetch('/api/payments/cancel', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ orderId: orderData.orderId }),
+                    }).catch((err) => {
+                        console.error('Failed to report payment cancellation:', err)
+                    })
+                    return
+                }
+
+                const verifyRes = await fetch('/api/payments/cashfree/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ orderId: orderData.orderId }),
+                })
+
+                const verifyData = await verifyRes.json()
+
+                if (!verifyRes.ok) {
+                    setError(verifyData.error || 'Payment verification failed.')
+                    return
+                }
+
+                router.refresh()
+                router.push('/dashboard')
+                return
             }
 
             const loaded = await loadRazorpayScript()
@@ -152,11 +226,12 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId }: P
                     </button>
                     
                     <button
-                        disabled
-                        className="w-full flex items-center justify-between bg-slate-800/20 border border-slate-700/20 text-slate-400 font-semibold py-2.5 px-4 rounded-xl cursor-not-allowed text-sm"
+                        onClick={() => handleSubscribe('cashfree')}
+                        disabled={isLoading}
+                        className="w-full flex items-center justify-between bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-500/30 text-emerald-200 font-semibold py-2.5 px-4 rounded-xl active:scale-[0.98] transition-all cursor-pointer text-sm disabled:opacity-50"
                     >
                         <span>Cashfree</span>
-                        <span className="text-[10px] uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full font-bold">Coming Soon</span>
+                        <span className="text-[10px] uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">Available</span>
                     </button>
                 </div>
                 
@@ -191,7 +266,7 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId }: P
                 disabled={isLoading}
                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/10 active:scale-[0.98] transition-all cursor-pointer text-center text-sm disabled:opacity-50"
             >
-                {isLoading ? 'Processing...' : isLoggedIn ? 'Subscribe Now' : 'Sign in to Subscribe'}
+                {isLoading ? 'Processing...' : (ctaText || (isLoggedIn ? 'Subscribe Now' : 'Sign in to Subscribe'))}
             </button>
         </div>
     )

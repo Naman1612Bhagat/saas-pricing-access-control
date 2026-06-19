@@ -55,6 +55,7 @@ describe('Payment & Subscription Integration', () => {
 
   it('claims payment atomically and prevents duplicate subscription creation', async () => {
     // 1. Create a fresh payment in status 'created'
+    const testOrderId = 'order_test_' + Date.now()
     const payment = await payload.create({
       collection: 'payments',
       data: {
@@ -63,7 +64,8 @@ describe('Payment & Subscription Integration', () => {
         amount: 999,
         currency: 'INR',
         gateway: 'razorpay',
-        razorpayOrderId: 'order_test_' + Date.now(),
+        gatewayOrderId: testOrderId,
+        razorpayOrderId: testOrderId,
         status: 'created',
       },
     }) as Payment
@@ -104,7 +106,7 @@ describe('Payment & Subscription Integration', () => {
 
     expect(dbPayment.status).toBe('paid')
     // One of them must have set the gateway payment id
-    expect(['pay_test_1', 'pay_test_2']).toContain(dbPayment.razorpayPaymentId)
+    expect(['pay_test_1', 'pay_test_2']).toContain(dbPayment.gatewayPaymentId)
 
     // 4. Verify that exactly ONE subscription was created for the user
     const subscriptions = await payload.find({

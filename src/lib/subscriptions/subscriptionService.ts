@@ -142,16 +142,27 @@ export async function processSuccessfulPayment({
     // Build the conditional UPDATE using drizzle's sql`` tagged template so
     // parameters are safely bound. The WHERE clause `status = 'created'` is the
     // compare-and-swap. Only one concurrent caller will succeed.
-    const claimQuery = gatewaySignature != null
-        ? sql`UPDATE payments
+    let claimQuery
+    if (payment.gateway === 'cashfree') {
+        claimQuery = sql`UPDATE payments
              SET    status = 'paid',
-                    razorpay_payment_id = ${gatewayPaymentId},
-                    razorpay_signature  = ${gatewaySignature}
+                    gateway_payment_id = ${gatewayPaymentId}
              WHERE  id = ${payment.id} AND status = 'created'`
-        : sql`UPDATE payments
-             SET    status = 'paid',
-                    razorpay_payment_id = ${gatewayPaymentId}
-             WHERE  id = ${payment.id} AND status = 'created'`
+    } else {
+        claimQuery = gatewaySignature != null
+            ? sql`UPDATE payments
+                 SET    status = 'paid',
+                        gateway_payment_id = ${gatewayPaymentId},
+                        gateway_signature  = ${gatewaySignature},
+                        razorpay_payment_id = ${gatewayPaymentId},
+                        razorpay_signature  = ${gatewaySignature}
+                 WHERE  id = ${payment.id} AND status = 'created'`
+            : sql`UPDATE payments
+                 SET    status = 'paid',
+                        gateway_payment_id = ${gatewayPaymentId},
+                        razorpay_payment_id = ${gatewayPaymentId}
+                 WHERE  id = ${payment.id} AND status = 'created'`
+    }
 
     const drizzle = (payload.db as any).drizzle
     if (!drizzle) {

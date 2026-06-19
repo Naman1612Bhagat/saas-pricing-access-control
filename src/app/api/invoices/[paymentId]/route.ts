@@ -80,8 +80,8 @@ export async function GET(
             amount: payment.amount,
             currency: payment.currency,
             gateway: payment.gateway,
-            razorpayOrderId: payment.razorpayOrderId,
-            razorpayPaymentId: payment.razorpayPaymentId ?? null,
+            gatewayOrderId: payment.gatewayOrderId ?? payment.razorpayOrderId,
+            gatewayPaymentId: payment.gatewayPaymentId ?? payment.razorpayPaymentId ?? null,
             createdAt: payment.createdAt,
             plan:
                 typeof payment.plan === 'object' && payment.plan !== null

@@ -90,8 +90,8 @@ async function generateAndDownloadPDF(
         amount: number
         currency: string
         gateway: string
-        razorpayOrderId: string
-        razorpayPaymentId: string | null
+        gatewayOrderId: string
+        gatewayPaymentId: string | null
         createdAt: string
         plan: { id: number; name: string }
         customer: { name: string; email: string }
@@ -296,8 +296,8 @@ async function generateAndDownloadPDF(
 
     const refRows: [string, string][] = [
         ['Gateway',    invoice.gateway === 'razorpay' ? 'Razorpay' : invoice.gateway],
-        ['Order ID',   invoice.razorpayOrderId],
-        ['Payment ID', invoice.razorpayPaymentId ?? '—'],
+        ['Order ID',   invoice.gatewayOrderId],
+        ['Payment ID', invoice.gatewayPaymentId ?? '—'],
         ['Currency',   (invoice.currency || 'INR').toUpperCase()],
     ]
 

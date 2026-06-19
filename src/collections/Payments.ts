@@ -4,7 +4,7 @@ export const Payments: CollectionConfig = {
     slug: 'payments',
 
     admin: {
-        useAsTitle: 'razorpayOrderId',
+        useAsTitle: 'gatewayOrderId',
     },
 
     access: {
@@ -75,9 +75,24 @@ export const Payments: CollectionConfig = {
         },
 
         {
-            name: 'razorpayOrderId',
+            name: 'gatewayOrderId',
             type: 'text',
             required: true,
+        },
+
+        {
+            name: 'gatewayPaymentId',
+            type: 'text',
+        },
+
+        {
+            name: 'gatewaySignature',
+            type: 'text',
+        },
+
+        {
+            name: 'razorpayOrderId',
+            type: 'text',
         },
 
         {

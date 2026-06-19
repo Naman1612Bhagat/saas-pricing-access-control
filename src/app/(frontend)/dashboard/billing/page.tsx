@@ -6,8 +6,32 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { Payment } from '@/payload-types'
 import { InvoiceDownloadButton } from './InvoiceDownloadButton'
+import { IdDisplay } from './IdDisplay'
 
 export const dynamic = 'force-dynamic'
+
+/** Renders a styled badge for the payment gateway. */
+function renderGatewayBadge(gateway: string) {
+    if (gateway === 'razorpay') {
+        return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                Razorpay
+            </span>
+        )
+    }
+    if (gateway === 'cashfree') {
+        return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                Cashfree
+            </span>
+        )
+    }
+    return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/10 border border-slate-500/20 text-slate-400">
+            {gateway}
+        </span>
+    )
+}
 
 /** Returns the formatted invoice number for a payment. */
 function buildInvoiceNumber(payment: { id: number; createdAt: string }): string {
@@ -188,22 +212,22 @@ export default async function BillingHistoryPage() {
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-300">
                                                         {formatPrice(payment.amount, payment.currency)}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400 font-medium">
-                                                        {payment.gateway === 'razorpay' ? 'Razorpay' : payment.gateway}
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                        {renderGatewayBadge(payment.gateway)}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         {renderStatusBadge(payment.status)}
                                                     </td>
-                                                    <td className="px-6 py-4 text-xs font-mono text-slate-500 space-y-1">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[10px] uppercase font-bold text-slate-600 tracking-wider">Order:</span>
-                                                            <span className="text-slate-400">{payment.razorpayOrderId}</span>
-                                                        </div>
-                                                        {payment.razorpayPaymentId && (
-                                                            <div className="flex flex-col pt-0.5">
-                                                                <span className="text-[10px] uppercase font-bold text-slate-600 tracking-wider">Payment:</span>
-                                                                <span className="text-indigo-400">{payment.razorpayPaymentId}</span>
-                                                            </div>
+                                                    <td className="px-6 py-4 text-xs space-y-2">
+                                                        <IdDisplay
+                                                            label="Order"
+                                                            value={payment.gatewayOrderId ?? payment.razorpayOrderId}
+                                                        />
+                                                        {(payment.gatewayPaymentId ?? payment.razorpayPaymentId) && (
+                                                            <IdDisplay
+                                                                label="Payment"
+                                                                value={payment.gatewayPaymentId ?? payment.razorpayPaymentId}
+                                                            />
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-400">
@@ -255,32 +279,32 @@ export default async function BillingHistoryPage() {
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#1f293d]/30 text-xs">
-                                            <div>
-                                                <span className="block text-slate-500 font-medium">Amount Paid</span>
-                                                <span className="font-semibold text-white text-sm mt-0.5 block">
-                                                    {formatPrice(payment.amount, payment.currency)}
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span className="block text-slate-500 font-medium">Gateway</span>
-                                                <span className="text-slate-300 font-semibold mt-0.5 block">
-                                                    {payment.gateway === 'razorpay' ? 'Razorpay' : payment.gateway}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-[#0d121f]/50 p-3 rounded-xl space-y-2 border border-[#1f293d]/20 text-[11px] font-mono">
-                                            <div>
-                                                <span className="block text-slate-600 font-bold uppercase tracking-wider text-[9px]">Order ID</span>
-                                                <span className="text-slate-400 break-all">{payment.razorpayOrderId}</span>
-                                            </div>
-                                            {payment.razorpayPaymentId && (
-                                                <div className="border-t border-[#1f293d]/20 pt-1.5">
-                                                    <span className="block text-slate-600 font-bold uppercase tracking-wider text-[9px]">Payment ID</span>
-                                                    <span className="text-indigo-400 break-all">{payment.razorpayPaymentId}</span>
-                                                </div>
-                                            )}
-                                        </div>
+                                             <div>
+                                                 <span className="block text-slate-500 font-medium mb-1">Amount Paid</span>
+                                                 <span className="font-semibold text-white text-sm block">
+                                                     {formatPrice(payment.amount, payment.currency)}
+                                                 </span>
+                                             </div>
+                                             <div>
+                                                 <span className="block text-slate-500 font-medium mb-1">Gateway</span>
+                                                 <div>{renderGatewayBadge(payment.gateway)}</div>
+                                             </div>
+                                         </div>
+ 
+                                         <div className="bg-[#0d121f]/50 p-3 rounded-xl space-y-3 border border-[#1f293d]/20">
+                                             <IdDisplay
+                                                 label="Order"
+                                                 value={payment.gatewayOrderId ?? payment.razorpayOrderId}
+                                             />
+                                             {(payment.gatewayPaymentId ?? payment.razorpayPaymentId) && (
+                                                 <div className="border-t border-[#1f293d]/25 pt-2">
+                                                     <IdDisplay
+                                                         label="Payment"
+                                                         value={payment.gatewayPaymentId ?? payment.razorpayPaymentId}
+                                                     />
+                                                 </div>
+                                             )}
+                                         </div>
 
                                         {/* Invoice download — only for paid payments */}
                                         {isPaid ? (

@@ -243,7 +243,10 @@ export interface Payment {
   amount: number;
   currency: string;
   gateway: 'razorpay' | 'cashfree';
-  razorpayOrderId: string;
+  gatewayOrderId: string;
+  gatewayPaymentId?: string | null;
+  gatewaySignature?: string | null;
+  razorpayOrderId?: string | null;
   razorpayPaymentId?: string | null;
   razorpaySignature?: string | null;
   status: 'created' | 'paid' | 'failed';
@@ -453,6 +456,9 @@ export interface PaymentsSelect<T extends boolean = true> {
   amount?: T;
   currency?: T;
   gateway?: T;
+  gatewayOrderId?: T;
+  gatewayPaymentId?: T;
+  gatewaySignature?: T;
   razorpayOrderId?: T;
   razorpayPaymentId?: T;
   razorpaySignature?: T;
