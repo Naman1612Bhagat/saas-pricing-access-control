@@ -1,0 +1,327 @@
+'use client'
+
+import React from 'react'
+import Link from 'next/link'
+import type { Payment } from '@/payload-types'
+import { InvoiceDownloadButton } from './InvoiceDownloadButton'
+import { IdDisplay } from './IdDisplay'
+import { useBillingRegion } from '@/hooks/useBillingRegion'
+import { formatCurrency } from '@/utilities/currencyHelpers'
+
+interface BillingHistoryClientProps {
+    payments: any[]
+}
+
+function renderGatewayBadge(gateway: string) {
+    if (gateway === 'razorpay') {
+        return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                Razorpay
+            </span>
+        )
+    }
+    if (gateway === 'cashfree') {
+        return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                Cashfree
+            </span>
+        )
+    }
+    if (gateway === 'paypal') {
+        return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                PayPal
+            </span>
+        )
+    }
+    return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/10 border border-slate-500/20 text-slate-400">
+            {gateway}
+        </span>
+    )
+}
+
+function buildInvoiceNumber(payment: { id: number; createdAt: string }): string {
+    const year = new Date(payment.createdAt).getFullYear()
+    return `INV-${year}-${payment.id.toString().padStart(4, '0')}`
+}
+
+export default function BillingHistoryClient({ payments }: BillingHistoryClientProps) {
+    const { currency } = useBillingRegion()
+
+
+    const formatDate = (dateStr: string) => {
+        try {
+            const d = new Date(dateStr)
+            const formatter = new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+            })
+            const parts = formatter.formatToParts(d)
+            const partMap = Object.fromEntries(parts.map(p => [p.type, p.value]))
+
+            const day = partMap.day
+            const month = partMap.month
+            const year = partMap.year
+            const hour = partMap.hour
+            const minute = partMap.minute
+            const dayPeriod = (partMap.dayPeriod || '').toUpperCase()
+
+            return `${day} ${month} ${year}, ${hour}:${minute} ${dayPeriod}`
+        } catch (err) {
+            console.error('Error formatting date:', err)
+            return dateStr
+        }
+    }
+
+    const renderStatusBadge = (status: Payment['status']) => {
+        switch (status) {
+            case 'paid':
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Paid
+                    </span>
+                )
+            case 'failed':
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 border border-red-500/20 text-red-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                        Failed
+                    </span>
+                )
+            case 'created':
+            default:
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        Created
+                    </span>
+                )
+        }
+    }
+
+    // Filter payments dynamically by active currency Display preference
+    const filteredPayments = payments.filter((payment) => {
+        const paymentCurrency = (payment.currency || 'INR').toUpperCase()
+        return paymentCurrency === currency.toUpperCase()
+    })
+
+    if (payments.length === 0) {
+        return (
+            <div className="bg-[#121824]/50 border border-[#1f293d]/50 p-12 rounded-3xl text-center space-y-6 max-w-xl mx-auto my-12">
+                <div className="w-16 h-16 bg-slate-800/40 rounded-full flex items-center justify-center text-2xl mx-auto">
+                    🧾
+                </div>
+                <div className="space-y-2">
+                    <h2 className="text-xl font-bold text-white">No payment history found</h2>
+                    <p className="text-sm text-slate-400">
+                        You haven&apos;t made any plan transactions yet. If you recently attempted a checkout, it will appear here.
+                    </p>
+                </div>
+                <Link
+                    href="/pricing"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md shadow-indigo-600/10 cursor-pointer inline-block text-sm"
+                >
+                    Subscribe to a Plan
+                </Link>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#1f293d]/50 pb-6">
+                <div>
+                    <Link
+                        href="/dashboard"
+                        className="text-indigo-400 hover:text-indigo-300 text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 mb-2 transition-colors"
+                    >
+                        <span>&larr;</span> Back to Dashboard
+                    </Link>
+                    <h1 className="text-3xl font-extrabold text-white tracking-tight">Billing History</h1>
+                    <p className="text-slate-400 text-sm mt-1">Review all your subscription payments and orders.</p>
+                    <p className="text-[11px] font-bold text-indigo-400 tracking-wider uppercase mt-2">
+                        {currency === 'USD' ? 'Showing USD transactions.' : 'Showing INR transactions.'}
+                    </p>
+                </div>
+            </div>
+
+            {filteredPayments.length === 0 ? (
+                <div className="bg-[#121824]/50 border border-[#1f293d]/50 p-12 rounded-3xl text-center space-y-6 max-w-xl mx-auto my-12">
+                    <div className="w-16 h-16 bg-slate-800/40 rounded-full flex items-center justify-center text-2xl mx-auto font-sans">
+                        🧾
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-xl font-bold text-white">No transactions found</h2>
+                        <p className="text-sm text-slate-400">
+                            No payments found for the selected currency.
+                        </p>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <div className="hidden md:block overflow-hidden bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 rounded-3xl">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-[#1f293d]/50 text-left">
+                                <thead>
+                                    <tr className="bg-[#0e1320]/80">
+                                        <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Plan Name</th>
+                                        <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Amount</th>
+                                        <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Gateway</th>
+                                        <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                                        <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Order / Payment ID</th>
+                                        <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Date</th>
+                                        <th scope="col" className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Invoice</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[#1f293d]/40">
+                                    {filteredPayments.map((payment) => {
+                                        const planName =
+                                            payment.plan && typeof payment.plan === 'object'
+                                                ? payment.plan.name
+                                                : 'Unknown Plan'
+                                        const invoiceNumber = buildInvoiceNumber(payment)
+                                        const isPaid = payment.status === 'paid'
+
+                                        return (
+                                            <tr key={payment.id} className="hover:bg-[#182030]/30 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white">
+                                                    {planName}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-300">
+                                                    {formatCurrency(payment.amount, payment.currency)}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                    {renderGatewayBadge(payment.gateway)}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {renderStatusBadge(payment.status)}
+                                                </td>
+                                                <td className="px-6 py-4 text-xs space-y-2">
+                                                    <IdDisplay
+                                                        label="Order"
+                                                        value={payment.gatewayOrderId ?? payment.razorpayOrderId}
+                                                    />
+                                                    {(payment.gatewayPaymentId ?? payment.razorpayPaymentId) && (
+                                                        <IdDisplay
+                                                            label="Payment"
+                                                            value={payment.gatewayPaymentId ?? payment.razorpayPaymentId}
+                                                        />
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-400">
+                                                    {formatDate(payment.createdAt)}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {isPaid ? (
+                                                        <InvoiceDownloadButton
+                                                            paymentId={payment.id}
+                                                            invoiceNumber={invoiceNumber}
+                                                        />
+                                                    ) : (
+                                                        <span className="text-xs text-slate-600 font-medium italic">
+                                                            {payment.status === 'failed' ? 'Not available' : 'Pending'}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="block md:hidden space-y-4">
+                        {filteredPayments.map((payment) => {
+                            const planName =
+                                payment.plan && typeof payment.plan === 'object'
+                                    ? payment.plan.name
+                                    : 'Unknown Plan'
+                            const invoiceNumber = buildInvoiceNumber(payment)
+                            const isPaid = payment.status === 'paid'
+
+                            return (
+                                <div
+                                    key={payment.id}
+                                    className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 p-5 rounded-2xl space-y-4 shadow-sm"
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="font-bold text-white text-base">{planName}</h3>
+                                            <span className="text-xs text-slate-500 font-medium">{formatDate(payment.createdAt)}</span>
+                                        </div>
+                                        <div>
+                                            {renderStatusBadge(payment.status)}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#1f293d]/30 text-xs">
+                                         <div>
+                                             <span className="block text-slate-500 font-medium mb-1">Amount Paid</span>
+                                             <span className="font-semibold text-white text-sm block">
+                                                 {formatCurrency(payment.amount, payment.currency)}
+                                             </span>
+                                         </div>
+                                         <div>
+                                             <span className="block text-slate-500 font-medium mb-1">Gateway</span>
+                                             <div>{renderGatewayBadge(payment.gateway)}</div>
+                                         </div>
+                                     </div>
+  
+                                     <div className="bg-[#0d121f]/50 p-3 rounded-xl space-y-3 border border-[#1f293d]/20 font-mono">
+                                         <IdDisplay
+                                             label="Order"
+                                             value={payment.gatewayOrderId ?? payment.razorpayOrderId}
+                                         />
+                                         {(payment.gatewayPaymentId ?? payment.razorpayPaymentId) && (
+                                             <div className="border-t border-[#1f293d]/25 pt-2">
+                                                 <IdDisplay
+                                                     label="Payment"
+                                                     value={payment.gatewayPaymentId ?? payment.razorpayPaymentId}
+                                                 />
+                                             </div>
+                                         )}
+                                     </div>
+
+                                     {isPaid ? (
+                                        <InvoiceDownloadButton
+                                            paymentId={payment.id}
+                                            invoiceNumber={invoiceNumber}
+                                            compact
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl border border-[#1f293d]/30 text-slate-600 text-xs font-medium">
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="12"
+                                                height="12"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            >
+                                                <circle cx="12" cy="12" r="10" />
+                                                <line x1="12" y1="8" x2="12" y2="12" />
+                                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                                            </svg>
+                                            Invoice not available
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </>
+            )}
+        </div>
+    )
+}

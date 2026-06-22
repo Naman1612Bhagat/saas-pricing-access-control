@@ -20,7 +20,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid JSON request body' }, { status: 400 })
         }
 
-        const { planId, gateway } = body
+        const { planId, gateway, currency } = body
 
         if (!planId) {
             return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 })
@@ -32,6 +32,33 @@ export async function POST(req: Request) {
 
         if (gateway !== 'razorpay' && gateway !== 'cashfree' && gateway !== 'paypal') {
             return NextResponse.json({ error: 'Unsupported payment gateway' }, { status: 400 })
+        }
+
+        if (!currency) {
+            return NextResponse.json({ error: 'Currency is required' }, { status: 400 })
+        }
+
+        const normalizedCurrency = currency.toUpperCase()
+        if (normalizedCurrency !== 'INR' && normalizedCurrency !== 'USD') {
+            return NextResponse.json({ error: 'Unsupported currency' }, { status: 400 })
+        }
+
+        if (normalizedCurrency === 'INR' && gateway !== 'razorpay' && gateway !== 'cashfree') {
+            return NextResponse.json({ error: 'Selected payment gateway is not available for the selected currency.' }, { status: 400 })
+        }
+
+        if (normalizedCurrency === 'USD') {
+            if (gateway !== 'paypal') {
+                return NextResponse.json({ error: 'Selected payment gateway is not available for the selected currency.' }, { status: 400 })
+            }
+            const rateStr = process.env.PAYPAL_USD_CONVERSION_RATE
+            if (!rateStr) {
+                return NextResponse.json({ error: 'International pricing is not configured.' }, { status: 400 })
+            }
+            const rate = parseFloat(rateStr)
+            if (isNaN(rate) || rate <= 0) {
+                return NextResponse.json({ error: 'International pricing is not configured.' }, { status: 400 })
+            }
         }
 
         const gatewaySettings = await payload.find({

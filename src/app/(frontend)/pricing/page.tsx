@@ -65,6 +65,15 @@ export default async function PricingPage() {
     }
 
     const currentPlanId = activeSubscription?.plan?.id || activeSubscription?.plan
+    
+    const conversionRateStr = process.env.PAYPAL_USD_CONVERSION_RATE
+    let conversionRate: number | null = null
+    if (conversionRateStr) {
+        const rate = parseFloat(conversionRateStr)
+        if (!isNaN(rate) && rate > 0) {
+            conversionRate = rate
+        }
+    }
 
     return (
         <PricingClient
@@ -73,6 +82,7 @@ export default async function PricingPage() {
             currentPlanId={currentPlanId}
             currentPlanExpiryDate={activeSubscription?.expiryDate || null}
             isLoggedIn={!!user}
+            conversionRate={conversionRate}
         />
     )
 }

@@ -8,6 +8,8 @@ type Props = {
     isLoggedIn: boolean
     currentPlanId?: string | number | null
     ctaText?: string
+    currency: 'INR' | 'USD'
+    conversionRate: number | null
 }
 
 interface EnabledGateway {
@@ -16,7 +18,7 @@ interface EnabledGateway {
     description?: string | null
 }
 
-export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, ctaText }: Props) {
+export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, ctaText, currency, conversionRate }: Props) {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [enabledGateways, setEnabledGateways] = useState<EnabledGateway[]>([])
@@ -143,7 +145,7 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ planId, gateway }),
+                    body: JSON.stringify({ planId, gateway, currency }),
                 })
 
                 const orderData = await orderRes.json()
@@ -192,7 +194,7 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ planId, gateway }),
+                    body: JSON.stringify({ planId, gateway, currency }),
                 })
 
                 const orderData = await orderRes.json()
@@ -258,7 +260,7 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ planId, gateway }),
+                body: JSON.stringify({ planId, gateway, currency }),
             })
 
             const orderData = await orderRes.json()
@@ -337,11 +339,19 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
         )
     }
 
-    if (!isLoadingGateways && enabledGateways.length === 0) {
+    const activeGateways = enabledGateways.filter((g) => {
+        if (currency === 'INR') {
+            return g.gateway === 'razorpay' || g.gateway === 'cashfree'
+        } else {
+            return g.gateway === 'paypal' && conversionRate !== null && conversionRate > 0
+        }
+    })
+
+    if (!isLoadingGateways && activeGateways.length === 0) {
         return (
             <div className="w-full">
                 <p className="text-center text-xs text-amber-400 font-medium bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl leading-relaxed">
-                    No payment gateways are currently available. Please try again later.
+                    No payment gateways are available for the selected currency.
                 </p>
             </div>
         )
@@ -383,7 +393,7 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
                 )}
 
                 <div className="space-y-2">
-                    {enabledGateways.map((g) => {
+                    {activeGateways.map((g) => {
                         const isRazorpay = g.gateway === 'razorpay'
                         const isPayPal = g.gateway === 'paypal'
                         const themeClasses = isRazorpay
@@ -448,8 +458,8 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
                         return
                     }
                     setError(null)
-                    if (enabledGateways.length === 1) {
-                        handleSubscribe(enabledGateways[0].gateway)
+                    if (activeGateways.length === 1) {
+                        handleSubscribe(activeGateways[0].gateway)
                     } else {
                         setShowGatewaySelection(true)
                     }

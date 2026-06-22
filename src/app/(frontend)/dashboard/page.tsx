@@ -6,6 +6,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { isSubscriptionActive, normalizeKey } from '@/utilities/subscriptionHelpers'
 import DashboardClient from './DashboardClient'
+import TotalPaymentsDisplay from './TotalPaymentsDisplay'
+import { formatCurrency } from '@/utilities/currencyHelpers'
 import { Shield, Clock, CreditCard, Activity, ArrowRight, FileDown, Sparkles, Headphones, BarChart2, Layers } from 'lucide-react'
 
 const IconMap: Record<string, React.ComponentType<any>> = {
@@ -204,7 +206,15 @@ export default async function DashboardPage() {
         },
         limit: 100,
     })
-    const totalSpent = paymentsResult.docs.reduce((acc, curr: any) => acc + (curr.amount || 0), 0)
+    const currencyTotals: Record<string, number> = {}
+    paymentsResult.docs.forEach((payment: any) => {
+        const curr = (payment.currency || 'INR').toUpperCase()
+        const amt = payment.amount || 0
+        currencyTotals[curr] = (currencyTotals[curr] || 0) + amt
+    })
+
+    const inrTotal = currencyTotals['INR'] || 0
+    const usdTotal = currencyTotals['USD'] || 0
 
     let daysRemaining = 0
     let formattedStart = ''
@@ -235,13 +245,7 @@ export default async function DashboardPage() {
         formattedExpiry = dateOnlyFormatter.format(expiry)
     }
 
-    const formatPrice = (amount: number) => {
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            minimumFractionDigits: 0,
-        }).format(amount)
-    }
+    // formatPrice removed in favor of formatCurrency
 
     return (
         <div className="bg-[#0b0f19] py-12 px-4 sm:px-6 lg:px-8 flex-grow">
@@ -313,20 +317,7 @@ export default async function DashboardPage() {
                         </div>
                     </div>
                     {/* Metric 3: Total Payments */}
-                    <div className="bg-[#121824]/50 border border-[#1f293d]/50 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:border-[#1f293d] hover:bg-[#121824]/80 transition-all duration-200">
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Payments</span>
-                            <div className="text-base font-extrabold text-white">
-                                {formatPrice(totalSpent)}
-                            </div>
-                            <div className="text-[10px] font-semibold text-slate-500">
-                                Lifetime billed sum
-                            </div>
-                        </div>
-                        <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400">
-                            <CreditCard size={18} />
-                        </div>
-                    </div>
+                    <TotalPaymentsDisplay inrTotal={inrTotal} usdTotal={usdTotal} />
                     {/* Metric 4: Reports Used */}
                     <div className="bg-[#121824]/50 border border-[#1f293d]/50 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:border-[#1f293d] hover:bg-[#121824]/80 transition-all duration-200">
                         <div className="space-y-1">

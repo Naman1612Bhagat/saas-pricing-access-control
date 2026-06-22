@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SubscribeButton from './SubscribeButton'
+import { formatCurrency } from '@/utilities/currencyHelpers'
+import { useBillingRegion } from '@/hooks/useBillingRegion'
 
 interface FeatureLimit {
     feature: any
@@ -30,6 +32,7 @@ interface PricingClientProps {
     currentPlanId?: string | number | null
     currentPlanExpiryDate?: string | null
     isLoggedIn: boolean
+    conversionRate: number | null
 }
 
 function getPlanDescription(planName: string): string {
@@ -60,8 +63,9 @@ function getPlanSummary(planName: string): string {
     return ''
 }
 
-export default function PricingClient({ plans, features, currentPlanId, currentPlanExpiryDate, isLoggedIn }: PricingClientProps) {
+export default function PricingClient({ plans, features, currentPlanId, currentPlanExpiryDate, isLoggedIn, conversionRate }: PricingClientProps) {
     const [openFaq, setOpenFaq] = useState<number | null>(0)
+    const { currency } = useBillingRegion()
 
     const toggleFaq = (index: number) => {
         setOpenFaq(openFaq === index ? null : index)
@@ -103,6 +107,7 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                         Choose a pricing tier that fits your needs. Lock or unlock features with clear usage limits.
                     </p>
                 </div>
+
 
                 <div className="flex flex-col items-center space-y-6">
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-slate-500 py-1 text-[10px] uppercase font-bold tracking-widest">
@@ -186,12 +191,25 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                                             {getPlanSummary(plan.name)}
                                         </div>
 
-                                        <div className="my-6">
+                                        <div className="my-6 font-sans">
                                             <div className="flex items-baseline">
-                                                <span className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
-                                                    ₹{displayPrice}
-                                                </span>
-                                                <span className="text-slate-400 text-xs ml-2">/ {displayPeriodText}</span>
+                                                {currency === 'USD' && (conversionRate === null || conversionRate <= 0) ? (
+                                                    <span className="text-xs font-bold text-red-400 leading-normal">
+                                                        International pricing is currently unavailable.
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight">
+                                                            {formatCurrency(
+                                                                currency === 'INR'
+                                                                    ? plan.price
+                                                                    : Math.max(Math.round(plan.price * (conversionRate || 0) * 100) / 100, 1.00),
+                                                                currency
+                                                            )}
+                                                        </span>
+                                                        <span className="text-slate-400 text-xs ml-2">/ {displayPeriodText}</span>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
 
@@ -240,6 +258,8 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                                         isLoggedIn={isLoggedIn}
                                         currentPlanId={currentPlanId}
                                         ctaText="Subscribe"
+                                        currency={currency}
+                                        conversionRate={conversionRate}
                                     />
                                 </div>
                             )

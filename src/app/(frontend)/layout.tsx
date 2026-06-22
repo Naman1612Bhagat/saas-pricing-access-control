@@ -7,6 +7,8 @@ import { logoutUser } from '@/app/actions'
 import { redirect } from 'next/navigation'
 import { MobileMenu } from './components/MobileMenu'
 import { AccessShieldLogo } from './components/AccessShieldLogo'
+import CurrencySelector from './components/CurrencySelector'
+import CurrencyToast from './components/CurrencyToast'
 import './styles.css'
 
 export const metadata = {
@@ -116,7 +118,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </p>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8 text-left">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 text-left">
               <div>
                 <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest mb-4">Product</h4>
                 <ul className="space-y-2 text-xs">
@@ -149,6 +151,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <li>PayPal</li>
                 </ul>
               </div>
+
+              <div>
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest mb-4">Currency Display</h4>
+                <div className="mt-3">
+                  <CurrencySelector />
+                </div>
+              </div>
             </div>
 
             <div className="border-t border-[#1f293d]/30 pt-6 text-left text-xs text-slate-600">
@@ -156,6 +165,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
           </div>
         </footer>
+
+        <CurrencyToast />
       </body>
     </html>
   )
