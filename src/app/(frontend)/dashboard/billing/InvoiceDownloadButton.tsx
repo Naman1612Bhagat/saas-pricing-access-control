@@ -8,8 +8,6 @@ interface InvoiceDownloadButtonProps {
     compact?: boolean
 }
 
-// jsPDF standard fonts do not support the Rupee sign (U+20B9).
-// We use ISO currency codes to avoid glyph rendering issues in generated PDFs.
 function pdfSafeCurrency(amount: number, currency: string): string {
     const code = (currency || 'INR').toUpperCase()
     try {
@@ -80,13 +78,13 @@ async function generateAndDownloadPDF(
     const PW = doc.internal.pageSize.getWidth()
     const PH = doc.internal.pageSize.getHeight()
 
-    const INDIGO = [99,  102, 241] as const
-    const DARK   = [11,  15,  25 ] as const
-    const SLATE  = [148, 163, 184] as const
-    const WHITE  = [255, 255, 255] as const
-    const BLACK  = [15,  23,  42 ] as const
-    const GREEN  = [52,  211, 153] as const
-    const MUTED  = [100, 116, 139] as const
+    const INDIGO = [99, 102, 241] as const
+    const DARK = [11, 15, 25] as const
+    const SLATE = [148, 163, 184] as const
+    const WHITE = [255, 255, 255] as const
+    const BLACK = [15, 23, 42] as const
+    const GREEN = [52, 211, 153] as const
+    const MUTED = [100, 116, 139] as const
 
     const HEADER_H = 60
     doc.setFillColor(...DARK)
@@ -148,10 +146,10 @@ async function generateAndDownloadPDF(
     doc.text(invoice.customer.email || '—', col1, y + 6)
 
     const metaRows: [string, string, boolean][] = [
-        ['Invoice Number', invoiceNumber,                           false],
-        ['Invoice Date',   fmtDate(invoice.createdAt),             false],
-        ['Payment Date',   fmtDateTimeIST(invoice.createdAt),      false],
-        ['Payment Status', 'PAID',                                  true],
+        ['Invoice Number', invoiceNumber, false],
+        ['Invoice Date', fmtDate(invoice.createdAt), false],
+        ['Payment Date', fmtDateTimeIST(invoice.createdAt), false],
+        ['Payment Status', 'PAID', true],
     ]
 
     let metaY = y
@@ -247,10 +245,10 @@ async function generateAndDownloadPDF(
     y += 7
 
     const refRows: [string, string][] = [
-        ['Gateway',    invoice.gateway === 'razorpay' ? 'Razorpay' : invoice.gateway === 'paypal' ? 'PayPal' : invoice.gateway === 'cashfree' ? 'Cashfree' : invoice.gateway],
-        ['Order ID',   invoice.gatewayOrderId],
+        ['Gateway', invoice.gateway === 'razorpay' ? 'Razorpay' : invoice.gateway === 'paypal' ? 'PayPal' : invoice.gateway === 'cashfree' ? 'Cashfree' : invoice.gateway],
+        ['Order ID', invoice.gatewayOrderId],
         ['Payment ID', invoice.gatewayPaymentId ?? '—'],
-        ['Currency',   (invoice.currency || 'INR').toUpperCase()],
+        ['Currency', (invoice.currency || 'INR').toUpperCase()],
     ]
 
     for (const [label, value] of refRows) {

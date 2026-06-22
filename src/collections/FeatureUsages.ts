@@ -2,11 +2,9 @@ import type { CollectionConfig } from 'payload'
 
 export const FeatureUsages: CollectionConfig = {
     slug: 'feature-usages',
-
     admin: {
         useAsTitle: 'id',
     },
-
     access: {
         read: ({ req }) => {
             if (!req.user) return false
@@ -21,7 +19,6 @@ export const FeatureUsages: CollectionConfig = {
         update: ({ req }) => Boolean(req.user && req.user.role === 'admin'),
         delete: ({ req }) => Boolean(req.user && req.user.role === 'admin'),
     },
-
     fields: [
         {
             name: 'subscription',

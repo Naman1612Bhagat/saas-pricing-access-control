@@ -1,4 +1,3 @@
-import React from 'react'
 import { headers as getHeaders } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@/payload.config'

@@ -9,17 +9,6 @@ export const size = {
 
 export const contentType = 'image/png'
 
-/**
- * App Router favicon generator.
- *
- * Uses the EXACT SAME paths as AccessShieldLogo.tsx:
- *   - Shield:  "M50 8 L86 21 V48 C86 70 71 88 50 94 C29 88 14 70 14 48 V21 L50 8 Z"
- *   - Letter A: "M50 22 L72 73 H60.5 L56 59 C57.5 57 58.5 54.5 58.5 52 C58.5 47.3..."
- *
- * SVG <mask> is not supported by Satori (ImageResponse renderer), so the keyhole
- * is reproduced by drawing the cut shapes filled with the shield's dark background
- * colour (#1e1b4b) layered on top — identical visual result.
- */
 export default function Icon() {
   return new ImageResponse(
     (
@@ -68,12 +57,6 @@ export default function Icon() {
             fill="url(#shieldGrad)"
           />
 
-          {/*
-            Keyhole cutout — reproduces the mask from AccessShieldLogo.tsx.
-            Drawn on top using the shield fill colour so it reads as transparent.
-            Mask in AccessShieldLogo cuts: circle cx=50 cy=52 r=5
-            and polygon 47.5,52 52.5,52 54,67 46,67
-          */}
           <circle cx="50" cy="52" r="5" fill="#1a1740" />
           <polygon points="47.5,52 52.5,52 54,67 46,67" fill="#1a1740" />
         </svg>

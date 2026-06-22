@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 interface IdDisplayProps {
     label: string
@@ -40,7 +40,6 @@ export function IdDisplay({ label, value }: IdDisplayProps) {
                     <span className="cursor-help border-b border-dotted border-slate-600 text-slate-300 hover:text-white transition-colors duration-150">
                         {shortenId(value)}
                     </span>
-                    
                     {/* Tooltip Content */}
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col bg-[#0f172a] border border-slate-800 text-slate-300 text-[11px] px-3 py-1.5 rounded-lg shadow-xl font-mono whitespace-nowrap z-50 pointer-events-none transition-all duration-200">
                         <span className="text-[9px] uppercase font-bold text-slate-500 tracking-wider mb-0.5">Full ID</span>
@@ -50,7 +49,6 @@ export function IdDisplay({ label, value }: IdDisplayProps) {
                         <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800 -z-10 translate-y-[1px]" />
                     </div>
                 </div>
-
                 {/* Copy Button */}
                 <div className="relative flex items-center">
                     <button
@@ -90,7 +88,6 @@ export function IdDisplay({ label, value }: IdDisplayProps) {
                             </svg>
                         )}
                     </button>
-
                     {/* Copied Success Popover */}
                     {copied && (
                         <span className="absolute left-full ml-1 px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-semibold rounded-md whitespace-nowrap">

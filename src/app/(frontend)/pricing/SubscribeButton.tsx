@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 type Props = {
@@ -53,10 +53,10 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
             if (container) {
                 container.innerHTML = ''
                 ;(window as any).paypal.Buttons({
-                    createOrder: function(data: any, actions: any) {
+                    createOrder: function(_data: any, _actions: any) {
                         return payPalOrderId
                     },
-                    onApprove: async function(data: any, actions: any) {
+                    onApprove: async function(_data: any, _actions: any) {
                         setIsLoading(true)
                         try {
                             const res = await fetch('/api/payments/paypal/capture', {
@@ -86,7 +86,7 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
                         setShowPayPalButtons(false)
                         setPayPalOrderId(null)
                     },
-                    onCancel: function(data: any) {
+                    onCancel: function(_data: any) {
                         setError('Payment cancelled.')
                         setShowPayPalButtons(false)
                         setPayPalOrderId(null)
@@ -403,17 +403,17 @@ export default function SubscribeButton({ planId, isLoggedIn, currentPlanId, cta
                                 key={g.gateway}
                                 onClick={() => handleSubscribe(g.gateway)}
                                 disabled={isLoading}
-                                className={`w-full flex items-center justify-between font-semibold py-2.5 px-4 rounded-xl active:scale-[0.98] transition-all cursor-pointer text-sm disabled:opacity-50 ${themeClasses}`}
+                                className={`w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-semibold py-2.5 px-4 rounded-xl active:scale-[0.98] transition-all cursor-pointer text-sm disabled:opacity-50 ${themeClasses}`}
                             >
-                                <div className="flex flex-col text-left">
+                                <div className="flex flex-col text-left min-w-0">
                                     <span>{g.displayName}</span>
                                     {g.description && (
-                                        <span className="text-[9px] font-normal text-slate-400 mt-0.5 max-w-[200px] leading-snug">
+                                        <span className="text-[9px] font-normal text-slate-400 mt-0.5 max-w-full leading-snug break-words">
                                             {g.description}
                                         </span>
                                     )}
                                 </div>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${badgeClasses}`}>
+                                <span className={`self-start sm:self-auto text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${badgeClasses} shrink-0`}>
                                     {badgeText}
                                 </span>
                             </button>

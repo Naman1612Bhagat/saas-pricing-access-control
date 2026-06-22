@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
@@ -77,7 +77,6 @@ export function MobileMenu({ navLinks, isLoggedIn }: MobileMenuProps) {
       >
         {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
-
       {/* Backdrop */}
       {isOpen && (
         <div
@@ -86,7 +85,6 @@ export function MobileMenu({ navLinks, isLoggedIn }: MobileMenuProps) {
           onClick={() => setIsOpen(false)}
         />
       )}
-
       {/* Drawer */}
       <div
         id="mobile-nav-drawer"
@@ -110,10 +108,9 @@ export function MobileMenu({ navLinks, isLoggedIn }: MobileMenuProps) {
               onClick={() => setIsOpen(false)}
               className={`
                 flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
-                ${
-                  pathname === link.href
-                    ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-[#1f293d] active:bg-[#2d3a54]'
+                ${pathname === link.href
+                  ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'
+                  : 'text-slate-300 hover:text-white hover:bg-[#1f293d] active:bg-[#2d3a54]'
                 }
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
               `}
@@ -121,7 +118,6 @@ export function MobileMenu({ navLinks, isLoggedIn }: MobileMenuProps) {
               {link.label}
             </Link>
           ))}
-
           {/* Auth links for unauthenticated mobile users */}
           {!isLoggedIn && (
             <div className="mt-3 pt-3 border-t border-[#1f293d]/60 flex flex-col gap-2">

@@ -96,8 +96,6 @@ export async function POST(req: Request) {
             console.error('Payment gateway order creation failed:', err)
             return NextResponse.json({ error: 'Failed to create order with payment gateway' }, { status: 502 })
         }
-
-        // PayPal sandbox uses fixed USD demo prices. Replace with real pricing/conversion logic before production.
         try {
             await payload.create({
                 collection: 'payments',

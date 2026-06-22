@@ -48,7 +48,6 @@ export class CashfreeProvider implements PaymentProvider {
             },
         }
 
-
         if (input.notes?.returnUrl) {
             body.order_meta = {
                 return_url: input.notes.returnUrl,
@@ -84,7 +83,6 @@ export class CashfreeProvider implements PaymentProvider {
     async verifyPayment(input: VerifyPaymentInput): Promise<VerifyPaymentResult> {
         const { clientId, clientSecret, baseUrl } = this.getCredentials()
 
-
         const orderResponse = await fetch(`${baseUrl}/orders/${input.orderId}`, {
             method: 'GET',
             headers: {
@@ -106,7 +104,6 @@ export class CashfreeProvider implements PaymentProvider {
             return { valid: false }
         }
 
-
         const paymentsResponse = await fetch(`${baseUrl}/orders/${input.orderId}/payments`, {
             method: 'GET',
             headers: {
@@ -122,7 +119,7 @@ export class CashfreeProvider implements PaymentProvider {
         }
 
         const paymentsData = await paymentsResponse.json()
-        
+
         let gatewayPaymentId: string | undefined
         if (Array.isArray(paymentsData)) {
             const successfulPayment = paymentsData.find(p => p.payment_status === 'SUCCESS')

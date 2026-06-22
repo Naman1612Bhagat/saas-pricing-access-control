@@ -1,17 +1,16 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { incrementReportUsageAction } from '@/app/actions'
 
 type Props = {
-    userId: string
     initialUsage: number
     limitType: string
     limitValue: number | null
 }
 
-export default function ExportReportsClient({ userId, initialUsage, limitType, limitValue }: Props) {
+export default function ExportReportsClient({ initialUsage, limitType, limitValue }: Props) {
     const router = useRouter()
     const [usageCount, setUsageCount] = useState(initialUsage)
     const [reportType, setReportType] = useState('sales')

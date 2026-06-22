@@ -2,18 +2,15 @@ import type { CollectionConfig } from 'payload'
 
 export const Plans: CollectionConfig = {
     slug: 'plans',
-
     admin: {
         useAsTitle: 'name',
     },
-
     access: {
         read: () => true,
         create: ({ req }) => Boolean(req.user && req.user.role === 'admin'),
         update: ({ req }) => Boolean(req.user && req.user.role === 'admin'),
         delete: ({ req }) => Boolean(req.user && req.user.role === 'admin'),
     },
-
     fields: [
         {
             name: 'name',
@@ -55,7 +52,7 @@ export const Plans: CollectionConfig = {
                     name: 'limitValue',
                     type: 'number',
                     admin: {
-                        condition: (data, siblingData) => siblingData?.limitType === 'limited',
+                        condition: (_data, siblingData) => siblingData?.limitType === 'limited',
                     },
                 },
             ],

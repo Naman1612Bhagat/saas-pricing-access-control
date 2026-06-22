@@ -6,7 +6,7 @@ import config from '@/payload.config'
 
 const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'
 
-export async function loginUser(prevState: any, formData: FormData) {
+export async function loginUser(_prevState: any, formData: FormData) {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
@@ -44,7 +44,7 @@ export async function loginUser(prevState: any, formData: FormData) {
     }
 }
 
-export async function registerUser(prevState: any, formData: FormData) {
+export async function registerUser(_prevState: any, formData: FormData) {
     const name = formData.get('name') as string
     const email = formData.get('email') as string
     const password = formData.get('password') as string

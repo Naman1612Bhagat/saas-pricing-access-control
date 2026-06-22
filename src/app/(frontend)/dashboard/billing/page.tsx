@@ -1,4 +1,3 @@
-import React from 'react'
 import { headers as getHeaders } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -178,7 +177,7 @@ export default async function BillingHistoryPage() {
                     </div>
                 ) : (
                     <>
-                        <div className="hidden sm:block overflow-hidden bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 rounded-3xl">
+                        <div className="hidden md:block overflow-hidden bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 rounded-3xl">
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-[#1f293d]/50 text-left">
                                     <thead>
@@ -250,7 +249,7 @@ export default async function BillingHistoryPage() {
                             </div>
                         </div>
 
-                        <div className="block sm:hidden space-y-4">
+                        <div className="block md:hidden space-y-4">
                             {payments.map((payment) => {
                                 const planName =
                                     payment.plan && typeof payment.plan === 'object'

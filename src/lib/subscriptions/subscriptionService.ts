@@ -18,7 +18,6 @@ export interface ProcessSuccessfulPaymentResult {
     alreadyProcessed: boolean
 }
 
-
 export async function expireActiveSubscriptions(
     payload: Payload,
     userId: number,
@@ -46,7 +45,6 @@ export async function expireActiveSubscriptions(
         })
     }
 }
-
 
 export async function createSubscription(
     payload: Payload,
@@ -127,8 +125,7 @@ export async function processSuccessfulPayment({
     }
     const claimResult = await drizzle.execute(claimQuery)
 
-    // rowCount = 0 → another process already claimed this payment (webhook or
-    // verify route). Return immediately without creating a duplicate subscription.
+    // rowCount = 0 → another process already claimed this payment (webhook or verify route). Return immediately without creating a duplicate subscription.
     const rowsClaimed = (claimResult as { rowCount?: number }).rowCount ?? 0
 
     if (rowsClaimed === 0) {
@@ -139,11 +136,7 @@ export async function processSuccessfulPayment({
     }
 
     // Activate the new subscription within a database transaction.
-    // We won the atomic claim. Now expire old subscriptions and create the new
-    // one. Both operations are wrapped in a transaction so they succeed or fail
-    // together. If this block throws, the payment remains 'paid' (the claim
-    // cannot be rolled back at this point), but the webhook retry mechanism will
-    // re-trigger activation on the next delivery attempt.
+    // We won the atomic claim. Now expire old subscriptions and create the new one. Both operations are wrapped in a transaction so they succeed or fail together. If this block throws, the payment remains 'paid' (the claim cannot be rolled back at this point), but the webhook retry mechanism will re-trigger activation on the next delivery attempt.
 
     const hasTransactions =
         payload.db != null &&

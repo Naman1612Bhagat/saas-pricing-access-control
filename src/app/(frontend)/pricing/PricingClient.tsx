@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import SubscribeButton from './SubscribeButton'
 
 interface FeatureLimit {
@@ -82,7 +82,7 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
         },
         {
             q: 'Which payment methods are supported?',
-            a: 'We support multiple secure payment methods including Razorpay (Credit/Debit Cards, UPI, Netbanking, Wallets) and Cashfree (UPI, Cards, and popular wallets).',
+            a: 'We support multiple secure payment methods including Razorpay (Credit/Debit Cards, UPI, Netbanking, Wallets), Cashfree (UPI, Cards, and popular wallets), and PayPal (International accounts and cards).',
         },
         {
             q: 'What happens when my subscription expires?',
@@ -117,6 +117,10 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                                 <span className="text-[10px] font-bold text-emerald-300 normal-case">Cashfree</span>
                             </div>
                             <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-[#121824] border border-slate-800/80 rounded-md">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                <span className="text-[10px] font-bold text-blue-300 normal-case">PayPal</span>
+                            </div>
+                            <div className="flex items-center space-x-1.5 px-2.5 py-1 bg-[#121824] border border-slate-800/80 rounded-md">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                 <span className="text-[10px] font-bold text-indigo-300 normal-case">SSL Secured</span>
                             </div>
@@ -141,7 +145,7 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                             return (
                                 <div
                                     key={plan.id}
-                                    className={`relative flex flex-col justify-between bg-[#121824]/80 backdrop-blur border rounded-3xl p-8 shadow-lg transition-all ${
+                                    className={`relative flex flex-col justify-between bg-[#121824]/80 backdrop-blur border rounded-3xl p-5 sm:p-8 shadow-lg transition-all ${
                                         isActiveUserPlan
                                             ? 'border-indigo-500 bg-gradient-to-br from-[#1e294b] via-[#121824]/95 to-[#0b0f19] shadow-[0_0_30px_rgba(99,102,241,0.35)]'
                                             : 'border-[#1f293d]/70 md:hover:-translate-y-1 md:hover:border-indigo-500/60 md:hover:shadow-[0_0_30px_rgba(99,102,241,0.25)] transition-all duration-300'
@@ -244,13 +248,14 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                 )}
 
                 <div className="max-w-6xl mx-auto py-4 border-y border-[#1f293d]/40">
-                    <div className="grid grid-cols-2 md:grid-cols-6 gap-6 text-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-6 text-center">
                         {[
                             { label: 'Secure Payments', icon: '🔒' },
                             { label: 'Instant Activation', icon: '⚡' },
                             { label: 'PDF Invoice Downloads', icon: '🧾' },
                             { label: 'Razorpay Support', icon: '💳' },
                             { label: 'Cashfree Support', icon: '💸' },
+                            { label: 'PayPal Support', icon: '🌐' },
                             { label: 'Cancel Anytime', icon: '✓' }
                         ].map((b, i) => (
                             <div key={i} className="flex flex-col items-center space-y-1.5">
@@ -264,8 +269,8 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                 {plans.length > 0 && (
                     <div className="max-w-4xl mx-auto mt-8 hidden sm:block">
                         <h3 className="text-xl font-bold text-white text-center mb-8">Compare Plan Features</h3>
-                        <div className="bg-[#121824]/60 border border-[#1f293d]/50 rounded-2xl overflow-hidden backdrop-blur shadow-xl">
-                            <table className="w-full text-left border-collapse table-fixed">
+                        <div className="bg-[#121824]/60 border border-[#1f293d]/50 rounded-2xl overflow-x-auto backdrop-blur shadow-xl">
+                            <table className="w-full text-left border-collapse table-fixed min-w-[600px]">
                                 <thead>
                                     <tr className="border-b border-[#1f293d]/60 bg-[#0e1320]/75">
                                         <th className="p-5 w-[35%] text-xs font-bold text-slate-400 uppercase tracking-wider">Feature</th>
@@ -326,7 +331,7 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
 
                 <div className="max-w-xl mx-auto flex flex-col items-center space-y-3 py-6">
                     <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Secure Payments Partnered With</p>
-                    <div className="flex items-center space-x-6">
+                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
                         <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#121824] border border-slate-800 rounded-lg">
                             <span className="w-2 h-2 rounded-full bg-purple-500"></span>
                             <span className="text-xs font-bold text-purple-300">Razorpay</span>
@@ -334,6 +339,10 @@ export default function PricingClient({ plans, features, currentPlanId, currentP
                         <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#121824] border border-slate-800 rounded-lg">
                             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                             <span className="text-xs font-bold text-emerald-300">Cashfree</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#121824] border border-slate-800 rounded-lg">
+                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <span className="text-xs font-bold text-blue-300">PayPal</span>
                         </div>
                         <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#121824] border border-slate-800 rounded-lg">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>

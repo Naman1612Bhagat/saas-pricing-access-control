@@ -21,7 +21,6 @@ const IconMap: Record<string, React.ComponentType<any>> = {
 }
 
 export const dynamic = 'force-dynamic'
-
 export default async function DashboardPage() {
     const headers = await getHeaders()
     const payloadConfig = await config
@@ -67,15 +66,15 @@ export default async function DashboardPage() {
         const featureLimits = subscription.plan.featureLimits || []
         for (const limit of featureLimits) {
             if (!limit.feature) continue
-            
+
             const feat = typeof limit.feature === 'object' ? limit.feature : null
             if (!feat) continue
-            
+
             const featKey = feat.key
             const normKey = normalizeKey(featKey)
             const limitType = limit.limitType
             const limitValue = limit.limitValue
-            
+
             if (limitType === 'disabled') continue
 
             const usagesResult = await payload.find({
@@ -128,7 +127,7 @@ export default async function DashboardPage() {
             } else {
                 isEnabled = true
                 statusBadge = 'Enabled'
-                
+
                 if (normKey === 'export_reports') {
                     buttonText = 'Export'
                     buttonHref = '/features/export-reports'
@@ -216,16 +215,16 @@ export default async function DashboardPage() {
         const start = new Date(subscription.startDate || subscription.createdAt)
         const expiry = new Date(subscription.expiryDate)
         const now = new Date()
-        
+
         const totalDuration = expiry.getTime() - start.getTime()
         const elapsed = now.getTime() - start.getTime()
-        
-        progressPercentage = totalDuration > 0 
-            ? Math.min(100, Math.max(0, Math.round((elapsed / totalDuration) * 100))) 
+
+        progressPercentage = totalDuration > 0
+            ? Math.min(100, Math.max(0, Math.round((elapsed / totalDuration) * 100)))
             : 100
 
         daysRemaining = Math.max(0, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
-        
+
         const dateOnlyFormatter = new Intl.DateTimeFormat('en-IN', {
             timeZone: 'Asia/Kolkata',
             day: 'numeric',
@@ -247,7 +246,7 @@ export default async function DashboardPage() {
     return (
         <div className="bg-[#0b0f19] py-12 px-4 sm:px-6 lg:px-8 flex-grow">
             <div className="max-w-5xl mx-auto space-y-10">
-                
+
                 {/* SECTION 1: Welcome Header */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 border-b border-[#1f293d]/40 pb-6">
                     <div className="space-y-1.5">
@@ -281,9 +280,8 @@ export default async function DashboardPage() {
                         </p>
                     </div>
                 </div>
-
                 {/* SECTION 2: Metric Cards Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                     {/* Metric 1: Active Plan */}
                     <div className="bg-[#121824]/50 border border-[#1f293d]/50 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:border-[#1f293d] hover:bg-[#121824]/80 transition-all duration-200">
                         <div className="space-y-1">
@@ -299,7 +297,6 @@ export default async function DashboardPage() {
                             <Shield size={18} />
                         </div>
                     </div>
-
                     {/* Metric 2: Days Remaining */}
                     <div className="bg-[#121824]/50 border border-[#1f293d]/50 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:border-[#1f293d] hover:bg-[#121824]/80 transition-all duration-200">
                         <div className="space-y-1">
@@ -315,7 +312,6 @@ export default async function DashboardPage() {
                             <Clock size={18} />
                         </div>
                     </div>
-
                     {/* Metric 3: Total Payments */}
                     <div className="bg-[#121824]/50 border border-[#1f293d]/50 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:border-[#1f293d] hover:bg-[#121824]/80 transition-all duration-200">
                         <div className="space-y-1">
@@ -331,7 +327,6 @@ export default async function DashboardPage() {
                             <CreditCard size={18} />
                         </div>
                     </div>
-
                     {/* Metric 4: Reports Used */}
                     <div className="bg-[#121824]/50 border border-[#1f293d]/50 p-5 rounded-2xl flex items-center justify-between shadow-sm hover:border-[#1f293d] hover:bg-[#121824]/80 transition-all duration-200">
                         <div className="space-y-1">
@@ -348,10 +343,8 @@ export default async function DashboardPage() {
                         </div>
                     </div>
                 </div>
-
                 {/* Main Dashboard Workspace Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    
                     <div className="md:col-span-2 space-y-8">
                         {!subscription ? (
                             <div className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 p-10 rounded-3xl text-center space-y-6">
@@ -404,15 +397,14 @@ export default async function DashboardPage() {
                                             </span>
                                         </div>
                                     </div>
-
                                     <div className="space-y-2 pt-2">
                                         <div className="flex items-center justify-between text-[11px] font-semibold">
                                             <span className="text-indigo-400 font-bold">{daysRemaining} Days Remaining</span>
                                             <span className="text-slate-500">{progressPercentage}% elapsed</span>
                                         </div>
                                         <div className="w-full bg-[#1f293d]/40 h-2 rounded-full overflow-hidden border border-[#2d3a54]/20 shadow-inner">
-                                            <div 
-                                                className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-550" 
+                                            <div
+                                                className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-550"
                                                 style={{ width: `${progressPercentage}%` }}
                                             />
                                         </div>
@@ -445,9 +437,9 @@ export default async function DashboardPage() {
                                                 const IconComponent = IconMap[feat.iconName] || Sparkles
                                                 return (
                                                     <div key={feat.id} className="space-y-2.5 bg-[#0d121f]/50 border border-[#1f293d]/20 p-5 rounded-2xl">
-                                                        <div className="flex items-center justify-between text-xs">
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                                                             <div className="space-y-0.5">
-                                                                <h4 className="font-bold text-white flex items-center gap-2">
+                                                                <h4 className="font-bold text-white flex flex-wrap items-center gap-1.5 sm:gap-2">
                                                                     <IconComponent size={14} className="text-indigo-400" />
                                                                     <span>{feat.name}</span>
                                                                     {feat.statusBadge === 'Enabled' && (
@@ -479,16 +471,15 @@ export default async function DashboardPage() {
 
                                                         {feat.limitType !== 'disabled' && (
                                                             <div className="w-full bg-[#1f293d]/30 h-1.5 rounded-full overflow-hidden border border-[#2d3a54]/10">
-                                                                <div 
-                                                                    className={`h-full rounded-full transition-all duration-300 ${
-                                                                        feat.limitType === 'unlimited' 
-                                                                            ? 'bg-indigo-500' 
-                                                                            : (feat.usageCount / (feat.limitValue || 1)) >= 1 
-                                                                            ? 'bg-red-500' 
+                                                                <div
+                                                                    className={`h-full rounded-full transition-all duration-300 ${feat.limitType === 'unlimited'
+                                                                        ? 'bg-indigo-500'
+                                                                        : (feat.usageCount / (feat.limitValue || 1)) >= 1
+                                                                            ? 'bg-red-500'
                                                                             : 'bg-indigo-500'
-                                                                    }`}
-                                                                    style={{ 
-                                                                        width: `${feat.limitType === 'unlimited' ? Math.min(100, feat.usageCount * 10) : Math.min(100, (feat.usageCount / (feat.limitValue || 1)) * 100)}%` 
+                                                                        }`}
+                                                                    style={{
+                                                                        width: `${feat.limitType === 'unlimited' ? Math.min(100, feat.usageCount * 10) : Math.min(100, (feat.usageCount / (feat.limitValue || 1)) * 100)}%`
                                                                     }}
                                                                 />
                                                             </div>
@@ -523,10 +514,10 @@ export default async function DashboardPage() {
                             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
                                 Quick Actions
                             </h3>
-                            
+
                             <div className="space-y-3">
-                                <Link 
-                                    href="/dashboard/billing" 
+                                <Link
+                                    href="/dashboard/billing"
                                     className="group p-4 bg-[#121824]/50 border border-[#1f293d]/50 hover:border-indigo-500/40 hover:bg-[#121824] rounded-2xl transition-all duration-300 flex items-start gap-3.5 cursor-pointer shadow-sm"
                                 >
                                     <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-400 group-hover:scale-105 transition-transform">
@@ -541,8 +532,8 @@ export default async function DashboardPage() {
                                     </div>
                                 </Link>
 
-                                <Link 
-                                    href="/features/export-reports" 
+                                <Link
+                                    href="/features/export-reports"
                                     className="group p-4 bg-[#121824]/50 border border-[#1f293d]/50 hover:border-indigo-500/40 hover:bg-[#121824] rounded-2xl transition-all duration-300 flex items-start gap-3.5 cursor-pointer shadow-sm"
                                 >
                                     <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-400 group-hover:scale-105 transition-transform">
@@ -557,8 +548,8 @@ export default async function DashboardPage() {
                                     </div>
                                 </Link>
 
-                                <Link 
-                                    href="/pricing" 
+                                <Link
+                                    href="/pricing"
                                     className="group p-4 bg-[#121824]/50 border border-[#1f293d]/50 hover:border-indigo-500/40 hover:bg-[#121824] rounded-2xl transition-all duration-300 flex items-start gap-3.5 cursor-pointer shadow-sm"
                                 >
                                     <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-400 group-hover:scale-105 transition-transform">

@@ -6,6 +6,19 @@ import type {
     VerifyPaymentResult,
 } from '../types'
 
+export function convertInrToUsd(amountInInr: number): number {
+    const rateStr = process.env.PAYPAL_USD_CONVERSION_RATE
+    if (!rateStr) {
+        throw new Error('PayPal conversion rate is not configured.')
+    }
+    const rate = parseFloat(rateStr)
+    if (isNaN(rate) || rate <= 0) {
+        throw new Error('PayPal conversion rate is invalid.')
+    }
+    const converted = amountInInr * rate
+    return Math.max(Math.round(converted * 100) / 100, 1.00)
+}
+
 export class PayPalProvider implements PaymentProvider {
     private getCredentials() {
         const clientId = process.env.PAYPAL_CLIENT_ID
@@ -50,18 +63,7 @@ export class PayPalProvider implements PaymentProvider {
         const { clientId, clientSecret, baseUrl } = this.getCredentials()
         const accessToken = await this.getAccessToken(clientId, clientSecret, baseUrl)
 
-        // PayPal sandbox uses fixed USD demo prices. Replace with real pricing/conversion logic before production.
-        const planName = input.notes?.planName || ''
-        const lowerName = planName.toLowerCase()
-        let amountInUSD = 5.00
-
-        if (lowerName.includes('basic') || lowerName.includes('starter') || lowerName.includes('free') || lowerName.includes('hobby')) {
-            amountInUSD = 5.00
-        } else if (lowerName.includes('intermediate') || lowerName.includes('growing') || lowerName.includes('pro')) {
-            amountInUSD = 8.00
-        } else if (lowerName.includes('premium') || lowerName.includes('unlimited')) {
-            amountInUSD = 11.00
-        }
+        const amountInUSD = convertInrToUsd(input.amountInRupees)
 
         const body = {
             intent: 'CAPTURE',

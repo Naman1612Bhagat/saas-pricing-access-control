@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { simulateTimeTravel, incrementReportUsageAction } from '@/app/actions'
 import { Zap, Clock, ShieldAlert, FileDown } from 'lucide-react'
@@ -46,17 +46,15 @@ export default function DashboardClient({ subscriptionId }: Props) {
             {/* Status Messages */}
             {statusMessage && (
                 <div
-                    className={`p-4 rounded-2xl border text-xs font-semibold text-center flex items-center justify-center gap-2 transition-all duration-350 ${
-                        statusMessage.isError
+                    className={`p-4 rounded-2xl border text-xs font-semibold text-center flex items-center justify-center gap-2 transition-all duration-350 ${statusMessage.isError
                             ? 'bg-red-500/10 border-red-500/20 text-red-400'
                             : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                    }`}
+                        }`}
                 >
                     {statusMessage.isError ? <ShieldAlert size={14} /> : <Zap size={14} />}
                     <span>{statusMessage.text}</span>
                 </div>
             )}
-
             {/* Unified Tools & Testing Card */}
             <div className="bg-[#121824]/80 backdrop-blur border border-[#1f293d]/50 p-6 rounded-3xl space-y-6 shadow-sm">
                 <div className="border-b border-[#1f293d]/40 pb-4">
@@ -66,7 +64,6 @@ export default function DashboardClient({ subscriptionId }: Props) {
                     </h3>
                     <p className="text-[11px] text-slate-400 mt-1">Simulate application usage and subscription timelines in real-time.</p>
                 </div>
-
                 {/* Sub-section 1: Usage Simulation */}
                 <div className="space-y-3">
                     <div className="flex items-start gap-2.5">
@@ -80,7 +77,6 @@ export default function DashboardClient({ subscriptionId }: Props) {
                             </p>
                         </div>
                     </div>
-
                     <button
                         onClick={handleIncrementUsage}
                         disabled={isIncrementing || isTimeTraveling}
@@ -89,7 +85,6 @@ export default function DashboardClient({ subscriptionId }: Props) {
                         {isIncrementing ? 'Processing...' : 'Export Mock Report'}
                     </button>
                 </div>
-
                 <div className="border-t border-[#1f293d]/30 pt-4 space-y-4">
                     {/* Sub-section 2: Expiry & Time travel */}
                     <div className="flex items-start gap-2.5">
@@ -103,7 +98,6 @@ export default function DashboardClient({ subscriptionId }: Props) {
                             </p>
                         </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             onClick={() => handleTimeTravel(7)}

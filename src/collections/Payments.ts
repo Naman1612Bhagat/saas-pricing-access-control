@@ -2,31 +2,24 @@ import type { CollectionConfig } from 'payload'
 
 export const Payments: CollectionConfig = {
     slug: 'payments',
-
     admin: {
         useAsTitle: 'gatewayOrderId',
     },
-
     access: {
         read: ({ req }) => {
             if (req.user?.role === 'admin') {
                 return true
             }
-
             return {
                 user: {
                     equals: req.user?.id,
                 },
             }
         },
-
         create: ({ req }) => Boolean(req.user),
-
         update: ({ req }) => req.user?.role === 'admin',
-
         delete: ({ req }) => req.user?.role === 'admin',
     },
-
     fields: [
         {
             name: 'user',
@@ -34,27 +27,23 @@ export const Payments: CollectionConfig = {
             relationTo: 'users',
             required: true,
         },
-
         {
             name: 'plan',
             type: 'relationship',
             relationTo: 'plans',
             required: true,
         },
-
         {
             name: 'amount',
             type: 'number',
             required: true,
         },
-
         {
             name: 'currency',
             type: 'text',
             defaultValue: 'INR',
             required: true,
         },
-
         {
             name: 'gateway',
             type: 'select',
@@ -75,38 +64,31 @@ export const Payments: CollectionConfig = {
             ],
             required: true,
         },
-
         {
             name: 'gatewayOrderId',
             type: 'text',
             required: true,
         },
-
         {
             name: 'gatewayPaymentId',
             type: 'text',
         },
-
         {
             name: 'gatewaySignature',
             type: 'text',
         },
-
         {
             name: 'razorpayOrderId',
             type: 'text',
         },
-
         {
             name: 'razorpayPaymentId',
             type: 'text',
         },
-
         {
             name: 'razorpaySignature',
             type: 'text',
         },
-
         {
             name: 'status',
             type: 'select',

@@ -1,4 +1,3 @@
-import React from 'react'
 import { headers as getHeaders } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -112,7 +111,6 @@ export default async function ExportReportsPage() {
         return (
             <div className="bg-[#0b0f19] py-12 px-4 sm:px-6 lg:px-8 flex-grow">
                 <ExportReportsClient
-                    userId={String(user.id)}
                     initialUsage={currentUsage}
                     limitType={limitType}
                     limitValue={limitValue}
